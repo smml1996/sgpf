@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<!--
+	- load all libraries used for frontend and meant to be used in all interfaces
+	- html used for all interfaces
+-->
+{% load staticfiles %}
+<html lang="en">
+<head>
+	<title>Budget Management System</title>
+	<!-- define character codification-->
+	<meta charset="utf-8">
+
+	<!-- used for bootstrap's grid system -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<!-- bootstrap dependecies -->
+	<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css'%}" media="screen,projection">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/all.css'%}">
+
+	<!-- own css -->
+  <link rel="stylesheet" type="text/css" href="{% static 'css/mainStyles.css'%}" media="screen,projection">
+
+	<!-- fancy input calendar dependecies -->
+	<link rel="stylesheet" href="{% static 'css/bootstrap-datepicker3.css' %}"/>
+	<script type="text/javascript" src="{% static 'js/jquery-1.11.3.min.js' %}"></script>
+
+</head>
+<body style="height:100vh;">
+{% if user.is_authenticated %} <!-- show navbar only if user is authenticated-->
+  <nav class="navbar sticky-top navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">Budget Management System</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse " id="navbarNav">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item" id="li-1">
+          <a class="nav-link" href="{% url 'home' %}">Balance</a>
+        </li>
+        <li class="nav-item" id="li-2">
+          <a class="nav-link" href="{% url 'dailyInput' %}">Daily Input</a>
+        </li>
+
+				<li class="nav-item dropdown ">
+					<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						Configuration
+					</a>
+					<div class="dropdown-menu navbar-dark bg-dark" aria-labelledby="navbarDropdown">
+						<a class="nav-link" href="{% url 'conf' %}">Concept</a>
+						<a class="nav-link" href="{% url 'changePercentage' %}">Percentage</a>
+					</div>
+				</li>
+        <li class="nav-item" id="li-4">
+          <a class="nav-link" href="{% url 'simulator' %}">Balance Simulator</a>
+        </li>
+        <li class="nav-item" id="li-5">
+          <a class="nav-link" href="{% url 'savings' %}">Savings History</a>
+        </li>
+        <li class="nav-item" id="li-6">
+          <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+{% endif %}
+<div style="display:none" id="alert_succ" class="alert alert-success alert-dismissible">
+	<button type="button" class="close" onclick="closeAlertSucceed()">&times;</button>
+	<strong id="alertMessage"></strong>
+</div>
+<div style="display:none" id="alert_wrong" class="alert alert-warning alert-dismissible fade show" role="alert">
+	<button type="button"  class="close" onclick="closeAlertWrong()">&times;</button>
+	<strong id="alertMessageWrong"></strong>
+</div>
+{% block content %}
+
+
+{% endblock %}
+
+
+<!-- bootstrap dependecies -->
+<script src="{% static 'js/jquery-3.3.1.slim.min.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+<script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+ <script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>
+<script src="{% static 'js/bootstrap.min.js' %}"></script>
+
+<!-- import library to have a fancy calendar input, just down this comment -->
+<script type="text/javascript" src="{% static 'js/bootstrap-datepicker.min.js'%}"></script>
+
+<!-- chart dependecies (for savings.html)-->
+<script src="{% static 'js/canvasjs.min.js' %}"></script>
+
+<script>
+
+$( document ).ready(function() {
+		// variable "number" sent from backend to highlight navbar tabs
+    if({{number}} == 1){
+			$('#li-1').addClass('active');
+			// highlight balance (home) tab
+		}else if({{ number }} ==2){
+			$('#li-2').addClass('active');
+			// highlight Daily Input tab
+		}else if({{number}} == 3){
+			$('#li-3').addClass('active');
+			// highlight Configuration tab
+		}else if({{number}} == 4){
+			$('#li-4').addClass('active');
+			// highlight Balance Simulator tab
+		}else{
+			$('#li-5').addClass('active');
+			// highlight Savings History tab
+		}
+});
+
+function closeAlertWrong(){
+	// used when user wants to close alert dialogue
+	$("#alert_wrong").hide();
+}
+
+function closeAlertSucceed(){
+	// used when user wants to close alert dialogue
+	$("#alert_succ").hide();
+}
+function deleteConcept(e){
+		// $("#conceptos").val() gives concept id which must be positive
+		if($("#conceptos").val() == -1){
+			// user has not selected new concept
+			$("#alert_wrong").show();
+			document.getElementById('alertMessageWrong').innerHTML = "Please Select a Concept";
+			return;
+		}
+		$.ajax({
+			type: "GET",
+			url:"{% url 'deleteConcept' %}",
+			dataType: "json",
+			data:{
+				csrfmiddlewaretoken:'{{ csrf_token }}',
+				id_concept: $("#conceptos").val(),
+			},
+			success: function(){
+				// say to user that concept has been disabled
+				document.getElementById('alertMessage').innerHTML = "Concept Disabled, please refresh page";
+				console.log("succeed");
+			},
+			error: function(){
+				document.getElementById('alertMessageWrong').innerHTML = "Something went wrong, please try again";
+				console.log("error");
+
+			}
+		})
+	}
+
+
+	function deleteDailyInput(e){
+		$.ajax({
+			type: "GET",
+			url:"{% url 'deleteDailyInput' %}",
+			dataType: "json",
+			async:true, // keep front end responsive to user input
+			data:{
+				csrfmiddlewaretoken:'{{ csrf_token }}',
+				id_concept: $("#conceptos").val(),
+				date: $("#from-date").val(),
+			},
+			success: function(){
+
+				window.location.reload();
+				console.log("succeed");
+			},
+			error: function(){
+				$("#alert_wrong").show();
+				document.getElementById('alertMessageWrong').innerHTML = "Something went wrong, please try again";
+				console.log("error");
+
+			}
+		})
+	}
+
+	function changePercentage(e){
+		$.ajax({
+			type: "GET",
+			url:"{% url 'changePercentage' %}",
+			dataType: "json",
+			async:false, // keep front end responsive to user input
+			data:{
+				value: $("#input_percentage").val(),
+			},
+			success: function(){
+				window.location.reload();
+				document.getElementById('alertMessage').innerHTML = "Percentage Changed!";
+				// say to user that concept has been disabled
+
+
+
+			},
+			error: function(){
+				$("#alert_wrong").show();
+				document.getElementById('alertMessageWrong').innerHTML = "Something went wrong, please try again";
+				console.log("error");
+
+			}
+		})
+	}
+
+
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block content %}
+<div class="main-div">
+  <h1 class="text-center container-fluid" style='margin-top: 20vh;' style="color:#000;"> Sign In</h1>
+  <div class="container">
+    <div class="row" style="margin-top:10vh;">
+      <form method="post" style="width:100vw;">
+        {% if form.errors %}
+            <h3 class="text-center" style="color:rgb(255,0,0);">Not valid username and/or password</h3>
+        {% endif %}
+        {% csrf_token %}
+        <div class="col-sm-4 offset-sm-4 text-center">
+            <div class="info-form">
+                <!-- begin: input username-->
+                <div class="form-group text-center">
+                  <div class="input-group mb-3">
+                    <!-- begin: input addon-->
+                    <div class="input-group-prepend">
+                      <span class="input-group-text" id="basic-addon1">
+                        <i class="fas fa-users"></i>
+                      </span>
+                    </div>
+                    <!-- end: input addon-->
+                    <input type="text" name="{{ form.username.html_name }}" class="form-control" placeholder="Username"/>
+                  </div>
+                </div>
+                <!-- end: input username-->
+
+                <!-- begin: input password-->
+                <div class="form-group">
+                  <div class="input-group mb-3">
+                    <!-- begin: input addon-->
+                    <div class="input-group-prepend">
+                      <span class="input-group-text" id="basic-addon1">
+                        <i class="fas fa-unlock-alt"></i>
+                      </span>
+                    </div>
+                    <!-- end: input addon-->
+                    <input type="password" name="{{ form.password.html_name }}" class="form-control" placeholder="password"/>
+                  </div>
+                  </div>
+                </div>
+                <!-- end: input password-->
+
+
+                    <!-- begin: link password reset-->
+                    <div class="container">
+                      <div class="row justify-content-center">
+                        <div class="col-sm-8">
+                          <a href="{% url 'password_reset' %}" style="margin-top:1em;"><strong style="color:rgb(255,0,0)">Forgot your password?</strong></a>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- end: link password reset-->
+
+                  <div class="container">
+                    <div class="row">
+                      <!-- begin: signup link-->
+                      <div class="col-sm-4 offset-sm-1 ">
+                        <a href="{% url 'signup' %}" class="btn btn-primary " id="signup-button" role="button"  style="margin-top:1em;">Sign Up</a>
+                      </div>
+                      <!-- end: signup link-->
+                      <!-- begin: submit form button-->
+                      <div class="col-sm-4 offset-sm-2" style="margin-top:1em;">
+                        <button class="btn btn-primary" type="submit" role="button">Sign In</button>
+                      </div>
+                      <!-- end: submit form button-->
+                    </div>
+                  </div>
+            </div>
+          </div>
+        </form>
+    </div>
+  </div>
+</div>
+{% endblock content %}

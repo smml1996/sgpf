@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="container" style="margin-top:15vh;">
+  <div class="row"  >
+    <form method="POST" class="text-center" style="width:100vw;">
+      {% csrf_token %}
+      <!--begin: input from_date -->
+      <div class="col-md-4" style="margin-left:auto; margin-right:auto;">
+        <div class="form-group">
+          <div class="input-group mb-3">
+            <!-- begin: input's addorn -->
+            <div class="input-group-prepend">
+              <span class="input-group-text" id="basic-addon1">
+                <i class="fas fa-calendar-alt"></i>
+              </span>
+            </div>
+            <!-- end: input's addorn -->
+            <input id="from-date" type="text" name="{{ form.from_date.html_name }}" class="form-control" placeholder="from"/>
+          </div>
+        </div>
+      </div>
+      <!-- end: input from_date -->
+
+      <!-- begin: select conceptos -->
+      <div class="col-md-4" style="margin-left:auto; margin-right:auto;">
+        <div class="input-group mb-3 ">
+        <select class="custom-select" id="conceptos" name="{{ form.id_concepto.html_name }}" required>
+          {% for c in conceptos %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+        </div>
+      </div>
+      <!-- end: select conceptos -->
+
+      <!-- begin: input concept's value -->
+      <div class="col-md-4" style="margin-left:auto; margin-right:auto;">
+        <div class="input-group mb-3">
+          <!-- begin: input's addorn -->
+          <div class="input-group-prepend">
+            <span class="input-group-text" id="basic-addon2"><i class="fas fa-money-bill-alt"></i></span>
+          </div>
+          <!-- end: input's addorn -->
+          <input type="number" id="inputValue" min="0.00" step="0.01" name = "{{ form.value.html_name }}" class="form-control" placeholder="Value" aria-label="Username" aria-describedby="basic-addon2">
+        </div>
+      </div>
+      <!-- end: input concept's value -->
+
+
+
+      <div class="container" style="margin-top:10vh;">
+        <div class="row">
+          <!-- begin: button delete -->
+          <div class="col-sm-5">
+            <button type="button" onclick="deleteDailyInput(event)" class="btn btn-primary" style="margin-top:1em; float:right; width:5em;">Delete</button>
+          </div>
+          <!-- end: button delete -->
+          <!-- begin: button add -->
+          <div class="col-sm-5 " style="margin-top:1em;">
+            <button class="btn btn-primary" type="submit" style="width:5em;" role="button">Add</button>
+          </div>
+          <!-- end: button add -->
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+
+    var conceptsId =[]; // variable to catch concept's id to change dinamically value's input
+    var conceptsValue = []; // variable to know concepts value to change dinamically value's input
+    $(document).ready(function(){
+
+      // set default value to be the selected concept's value
+      {% for c in conceptos|slice:":1" %}
+          document.getElementById('inputValue').value = "{{ c.value }}";
+      {% endfor %}
+
+      // loading ids and its respectives mapping's value
+      {% for c in conceptos %}
+        conceptsId.push("{{ c.id }}");
+        conceptsValue.push({{ c.value }});
+      {% endfor %}
+
+      $('select').on('change', function() {
+        // on select's change, change value's input
+        var numValue = 0;
+        for(var i =0; i < conceptsId.length; i++){
+
+
+          if(conceptsId[i] == this.value){
+            numValue = conceptsValue[i];
+          }
+        }
+        document.getElementById('inputValue').value = numValue ;
+
+      });
+
+
+      // getting date input
+      var date_input=$('input[name="{{ form.from_date.html_name }}"]');
+      // getting calendar's container
+      var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+      // stablishing calendar's input options
+      var options={
+        format: 'dd/mm/yyyy',
+        container: container,
+        todayHighlight: true,
+        autoclose: true,
+      };
+
+      //initialiazing date input
+      date_input.datepicker(options);
+
+      // setting to today's date, date input
+      document.getElementById('from-date').value = "{{ todayDate }}";
+
+    })
+
+    // show alert if some daily input has been added or modified to notify user the changes made
+    {% if isDailyInput ==  True %}
+      $("#alert_succ").show();
+      document.getElementById('alertMessage').innerHTML = "{{ message }}";
+    {% endif %}
+
+</script>
+
+{% endblock content %}

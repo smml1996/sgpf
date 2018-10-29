@@ -1,0 +1,101 @@
+<!-- signup template -->
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="main-div">
+    <h1 class="text-center container-fluid" style='margin-top: 10vh;' style="color:#000;"> Sign Up</h1>
+    <div class="container">
+      <div class="row" style="margin-top:10vh;">
+        <form method="post" style="width:100vw;">
+          <h3 class="text-center" style="color:rgb(255,0,0);">{{ message }}</h3>
+          {% if form.errors %}
+              {{ form.errors }}
+          {% endif %}
+          {% csrf_token %}
+          <div class="col-sm-4 offset-sm-4 text-center">
+              <div class="info-form">
+                  <!-- begin: input username -->
+                  <div class="form-group text-center">
+                    <div class="input-group mb-3">
+                      <!-- begin: inputs' addorn-->
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="basic-addon1">
+                          <i class="fas fa-users"></i>
+                        </span>
+                      </div>
+                      <!-- end: inputs' addorn-->
+                      {{ form.username.errors }}
+                      <input type="text" name="{{ form.username.html_name }}" class="form-control" placeholder="username"/>
+                    </div>
+                  </div>
+                  <!-- end: input username -->
+
+
+                  <!-- begin: input email -->
+                  <div class="form-group">
+                    <div class="input-group mb-3">
+                      <!-- begin: inputs' addorn-->
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="basic-addon1">
+                          @
+                        </span>
+                      </div>
+                      <!-- end: inputs' addorn-->
+                      <input type="email" name="{{ form.email.html_name }}" class="form-control" placeholder="email"/>
+                    </div>
+                  </div>
+                  <!-- end: input email -->
+
+
+                  <!-- begin: input password(password1) -->
+                  <div class="form-group">
+                    <div class="input-group mb-3">
+                      <!-- begin: inputs' addorn-->
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="basic-addon1">
+                          <i class="fas fa-unlock-alt"></i>
+                        </span>
+                      </div>
+                      <!-- end: inputs' addorn-->
+                      {{ form.password1.errors }}
+
+                      <input type="password" name="{{ form.password1.html_name }}" class="form-control" placeholder="password"/>
+                    </div>
+                  </div>
+                  <!-- end: input password(password1) -->
+
+                  <!-- begin: input password confirmation (password2) -->
+                  <div class="form-group">
+                    <div class="input-group mb-3">
+                      <!-- begin: inputs' addorn-->
+                      <div class="input-group-prepend">
+                        <span class="input-group-text" id="basic-addon1">
+                          <i class="fas fa-unlock-alt"></i>
+                        </span>
+                      </div>
+                      <!-- end: inputs' addorn-->
+                      {{ form.password2.errors }}
+                      <input type="password" name="{{ form.password2.html_name }}" class="form-control" placeholder="repeat password"/>
+                    </div>
+                  </div>
+                  <!-- end: input password confirmation (password2) -->
+
+                  <!-- begin: submit button -->
+                  <div class="container">
+                    <div class="row justify-content-center">
+                      <div class="col-sm-4">
+                        <button class="btn btn-primary" type="submit" role="button">Sign Up</button>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- end: submit button -->
+              </div>
+            </div>
+          </form>
+      </div>
+    </div>
+
+</div>
+
+{% endblock content %}

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="container" style="margin-top:10vh;">
+
+  <!-- begin: input number months to be shown -->
+  <div class="row justify-content-center">
+    <div class="form-group">
+      <label for="formControlRange">For the last <span id="rangeValue"> </span> <span id="time-period">months: </label>
+      <input id="formControlRange" type="range" name="rangeInput" value="5" min="5" max="100" onchange="updateTextInput(this.value);">
+    </div>
+  </div>
+  <!-- end: input number months to be shown -->
+
+ <!-- begin: chart savings-->
+  <div class="row" style="margin-top:8vh;">
+  <div id="chartContainer" style="height: 300px; width: 100%;"></div>
+  </div>
+  <!-- end: chart savings-->
+
+</div>
+
+<script>
+$(document).ready(function(){
+  document.getElementById('rangeValue').innerHTML=5;
+
+  var chart = new CanvasJS.Chart("chartContainer", {
+  	animationEnabled: true,
+  	theme: "light2", // "light1", "light2", "dark1", "dark2"
+  	title:{
+  		text: "Remaining Income Percentage"
+  	},
+  	axisY: {
+  		title: "Savings Percentage (%)"
+  	},
+  	data: [{
+  		type: "column",
+  		showInLegend: false,
+  		legendMarkerColor: "grey",
+  		dataPoints: [
+  			{ y: 54.5, label: "01/09/2018" },
+  			{ y: 39,  label: "01/08/2018" },
+  			{ y: 29,  label: "01/07/2018" },
+  			{ y: 70,  label: "01/06/2018" },
+  			{ y: 87.4,  label: "01/05/2018" },
+
+  		]
+  	}]
+  });
+  chart.render();
+
+});
+function updateTextInput(val) {
+    document.getElementById('rangeValue').innerHTML=val;
+}
+
+function updateTimePeriod(val){
+  document.getElementById('time-period').innerHTML =val;
+}
+
+
+</script>
+{% endblock content %}

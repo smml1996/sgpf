@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="container" style="margin-top:15vh;">
+  <!-- begin: concept modification form-->
+    <form method="POST" >
+        {% csrf_token %}
+  <div class="row justify-content-center" >
+
+          <!-- begin: select concept -->
+          <div class="col-md-8">
+            <div class="row justify-content-center">
+              <div class="input-group mb-3 col-md-6 ">
+                {{ form.isNewConcept.errors }}
+              <select class="custom-select" name="{{ form.isNewConcept.html_name }}" id="conceptos">
+                <option value="-1" selected>New Concept</option> <!-- notice new concept's value equals -1 -->
+                {% for c in conceptos %} <!-- displaying the user's concepts, loaded in backend -->
+                  <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+              </div>
+            </div>
+          </div>
+          <!-- end: select concept -->
+
+          <!-- begin: input concept's name -->
+          <div class="col-md-8" >
+            <div class="row justify-content-center">
+            <div class="input-group mb-3 col-md-6">
+              {{ form.name.errors }}
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1"><i class="fas fa-pencil-alt"></i></span>
+              </div>
+              <input type="text" class="form-control" id="nombre" name="{{ form.name.html_name }}" maxlength="30" placeholder="Name" aria-label="Username" aria-describedby="basic-addon1" required>
+            </div>
+          </div>
+          </div>
+          <!-- end: input concept's name -->
+
+          <!-- begin: input concept's value -->
+          <div class="col-md-8" >
+            <div class="row justify-content-center">
+            <div class="input-group mb-3 col-md-6">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon2"><i class="fas fa-money-bill-alt"></i></span>
+              </div>
+              <!-- step set to 0.01 to allow decimal numbers -->
+              <input type="number" step="0.01" min="0" id="valor" class="form-control" name="{{ form.value.html_name }}" placeholder="Value" aria-label="Username" aria-describedby="basic-addon2" required>
+            </div>
+          </div>
+          </div>
+          <!-- end: input concept's value -->
+
+          <!-- begin: select concept's period -->
+          <div class="col-md-8" >
+            <div class="row justify-content-center">
+            <div class="input-group mb-3 col-md-6 ">
+            <select class="custom-select" name ="{{ form.period.html_name }}" id="period">
+              {% for val, displayVal in form.fields.period.choices %}
+                <option value= "{{ val }}">{{ displayVal }}</option>
+              {% endfor %}
+            </select>
+            </div>
+          </div>
+          </div>
+          <!-- end: input concept's period -->
+
+          <!-- begin: input concept's type -->
+          <div class="col-md-8">
+            <div class="row justify-content-center">
+            <div class="input-group mb-3 col-md-6 ">
+            <select class="custom-select" name="{{ form.isExpense.html_name }}" id="type">
+              {% for val, displayVal in form.fields.isExpense.choices %}
+                <option value= "{{ val }}">{{ displayVal }}</option>
+              {% endfor %}
+
+            </select>
+            </div>
+          </div>
+          </div>
+          <!-- begin: input concept's type -->
+
+
+          <div class="container" style="margin-top:10vh;">
+            <div class="row justify-content-center">
+
+              <!-- begin: button disable concept -->
+              <div class="col-sm-6">
+                <button type="button" onclick="deleteConcept(event)"  class="btn btn-primary " style="margin-top:1em; float:right; margin-right:1.5em; width:5em;">Disable</button>
+              </div>
+              <!-- end: button disable concept -->
+
+              <!-- begin: button disable concept -->
+              <div class="col-sm-6 " >
+                <button class="btn btn-primary" style="margin-top:1em;margin-left:1.5em; width:5em;"type="submit" role="button">Save</button>
+              </div>
+              <!-- end: button disable concept -->
+
+            </div>
+          </div>
+
+
+
+  </div>
+</form>
+
+<!-- end: concept modification form-->
+</div>
+{% endblock content %}

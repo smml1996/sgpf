@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block content %}
+
+<div class="container" style="margin-top:30vh;">
+
+  <div class="row justify-content-center">
+    <h2 > Current Percentage: {{ currentPercentage }}%</h2>
+  </div>
+
+    <!-- begin: input savings percentage -->
+    <form method="POST">
+      {% csrf_token %}
+    <div class="row justify-content-center" style="margin-top:1em;">
+
+      <div class="col-md-6" >
+        <div class="row justify-content-center">
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text" id="basic-addon1">%</span>
+          </div>
+          <input type="number" min="0"  max="100" step="0.01" class="form-control" id="input_percentage" name="{{ form.value.html_name }}" maxlength="30" placeholder="{{ currentPercentage }}" aria-label="value" aria-describedby="basic-addon1" required>
+        </div>
+      </div>
+
+      </div>
+    </div>
+    <!-- end: input savings percentage -->
+
+
+    <div class="row justify-content-center ">
+      <!-- begin: button disable concept -->
+        <button type="submit" class="btn btn-primary " style="margin-top:1em;">Use this Percentage!</button>
+      <!-- end: button disable concept -->
+    </div>
+  </form>
+
+
+</div>
+
+{% endblock content %}
