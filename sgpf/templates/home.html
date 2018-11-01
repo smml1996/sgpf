@@ -1,287 +1,164 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block content %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/helpButtonStyle.css'%}">
 
 <div id="main-page" class="container" style="margin-top: 15vh;">
   <div class="row justify-content-center" style="margin-bottom:2em;">
-    <h3>Current Savings: {{ currentSaving }}  </h3>
+    <h3>Current Savings: {{ currentSaving }} </h3>
+    <div style="margin-top:-1.7em; margin-left:1.7em;" class="help-tip" data-toggle="tooltip" data-placement="top" title="We'll use the percetage specified in configuration and take that amount from every income and if you don't have enough money we will substract from your savings money .We show you here how much you saved since you began using this app! ">
+      ?
+    </div>
+
   </div>
   <div class="row justify-content-center">
     <!-- begin: input date from -->
-      <div class="form-group text-center col-8 col-sm-8 col-md-4 col-lg-4">
-        <div class="input-group mb-3">
-          <div class="input-group-prepend">
-            <span class="input-group-text" id="basic-addon1">
-              <i class="fas fa-calendar-alt"></i>
-            </span>
-          </div>
-          <input id="from-date" type="text" name="from" value="{{ todayDate }}" class="form-control" placeholder="from"/>
+    <div class="form-group text-center col-8 col-sm-8 col-md-4 col-lg-4">
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <span class="input-group-text" id="basic-addon1">
+            <i class="fas fa-calendar-alt"></i>&emsp;from
+          </span>
         </div>
+        <input id="from-date" type="text" name="from" value="{{ todayDate }}" class="form-control" placeholder="from" />
       </div>
-      <!-- end: input date from -->
+    </div>
+    <!-- end: input date from -->
 
-      <!-- begin: input date to -->
-      <div class="form-group text-center col-8 col-sm-6 col-md-4 col-lg-4">
-        <div class="input-group mb-3">
-          <div class="input-group-prepend">
-            <span class="input-group-text" id="basic-addon1">
-              <i class="fas fa-calendar-alt"></i>
-            </span>
-          </div>
-          <input id="to-date" type="text" name="to" value="{{ todayDate }}" class="form-control" placeholder="to"/>
+    <!-- begin: input date to -->
+    <div class="form-group text-center col-8 col-sm-6 col-md-4 col-lg-4">
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <span class="input-group-text" id="basic-addon1">
+            <i class="fas fa-calendar-alt"></i>&emsp;to
+          </span>
         </div>
+        <input id="to-date" type="text" name="to" value="{{ todayDate }}" class="form-control" placeholder="to" />
       </div>
-      <!-- end: input date to -->
+    </div>
+    <!-- end: input date to -->
 
 
-      <!-- begin: button visualize incomes -->
-      <div class="col-5 col-md-8 col-lg-8 col-sm-5 justify-content-center text-center" style="margin-top:5vh;">
-        <button role="button" onclick="loadIncomes(event)" style="width:10em;" class="btn btn-primary">Visualize Incomes</button>
-      </div>
-      <!-- end: button visualize incomes -->
+    <!-- begin: button visualize incomes -->
+    <div class="col-5 col-md-8 col-lg-8 col-sm-5 justify-content-center text-center" style="margin-top:5vh;">
+      <button role="button" onclick="loadIncomes(event)" style="width:10em;" class="btn btn-primary">Visualize Incomes</button>
+    </div>
+    <!-- end: button visualize incomes -->
 
 
-      <!-- begin: button visualize expenses -->
-      <div class="col-5 col-md-8 col-lg-8 col-sm-5 justify-content-center text-center" style="margin-top:5vh;">
-        <button  role="button" onclick="loadExpenses(event)" style="width:10em;" class="btn btn-primary">Visualize Expenses</button>
-      </div>
-      <!-- end: button visualize expenses -->
+    <!-- begin: button visualize expenses -->
+    <div class="col-5 col-md-8 col-lg-8 col-sm-5 justify-content-center text-center" style="margin-top:5vh;">
+      <button role="button" onclick="loadExpenses(event)" style="width:10em;" class="btn btn-primary">Visualize Expenses</button>
+    </div>
+    <!-- end: button visualize expenses -->
 
-      <!-- begin: summary -->
-      <div class="col-5 col-md-8 col-lg-8 col-sm-5 justify-content-center " style="margin-top:5vh; ">
+    <!-- begin: summary -->
+    <div class="col-5 col-md-8 col-lg-8 col-sm-5 justify-content-center " style="margin-top:5vh; ">
+
+
       <div class="card" style="width: 40vw;margin-left:auto; margin-right:auto;">
+        <div style="position:absolute;" class="help-tip" data-toggle="tooltip" data-placement="top" title="Here you will see all your year and current month incomes substracted with your expenses till nowadays">
+          ?
+        </div>
         <div class="card-body">
           <h5 class="card-title">Summary</h5>
-          <p class="card-text text-center">All year: <span id="all-year"> {{ summaryYear }}</span></p>
+          <div>
+            <p class="card-text text-center">
+
+              All year: <span id="all-year"> {{ summaryYear }}</span>
+            </p>
+
             <p class="card-text text-center">Month: <span id="all-month"> {{ summaryMonth }}</span></p>
+          </div>
         </div>
       </div>
+      <!-- end: summary -->
     </div>
-    <!-- end: summary -->
   </div>
 </div>
+  <!-- detail-div is the div shown when visualize expense or visualize income button is clicked -->
+  <div id="detail-div" class="container" style="margin-top: 10vh;">
+    <h1 id="title-detail"> </h1>
+    <small id="range-date"></small>
+    <button type="button" class="btn btn-outline-primary btn-sm" onclick="goback()" style="float:right">return</button>
+    <ul class="nav nav-pills nav-fill" id="pills-tab" role="tablist" style="margin-top:3em;">
+      <li class="nav-item">
+        <a class="nav-link active" id="pills-no-period-tab" data-toggle="pill" href="#pills-no-period" role="tab" aria-controls="pills-no-period" aria-selected="true">No Period</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="pills-daily-tab" data-toggle="pill" href="#pills-daily" role="tab" aria-controls="pills-daily" aria-selected="false">Daily</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="pills-biweekly-tab" data-toggle="pill" href="#pills-biweekly" role="tab" aria-controls="pills-biweekly" aria-selected="false">Biweekly</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="pills-monthly-tab" data-toggle="pill" href="#pills-monthly" role="tab" aria-controls="pills-monthly" aria-selected="false">Monthly</a>
+      </li>
+    </ul>
+    <div class="tab-content" id="pills-tabContent">
 
-<!-- detail-div is the div shown when visualize expense or visualize income button is clicked -->
-<div id="detail-div" class="container" style="margin-top: 10vh;">
-  <h1 id="title-detail"> </h1>
-  <small id="range-date"></small>
-  <button type="button" class="btn btn-outline-primary btn-sm" onclick="goback()" style="float:right">return</button>
-  <ul class="nav nav-pills nav-fill" id="pills-tab" role="tablist" style="margin-top:3em;">
-    <li class="nav-item">
-      <a class="nav-link active" id="pills-no-period-tab" data-toggle="pill" href="#pills-no-period" role="tab" aria-controls="pills-no-period" aria-selected="true">No Period</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" id="pills-daily-tab" data-toggle="pill" href="#pills-daily" role="tab" aria-controls="pills-daily" aria-selected="false">Daily</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" id="pills-biweekly-tab" data-toggle="pill" href="#pills-biweekly" role="tab" aria-controls="pills-biweekly" aria-selected="false">Biweekly</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" id="pills-monthly-tab" data-toggle="pill" href="#pills-monthly" role="tab" aria-controls="pills-monthly" aria-selected="false">Monthly</a>
-    </li>
-  </ul>
-  <div class="tab-content" id="pills-tabContent">
-
-    <!-- begin no period panel -->
-    <div class="tab-pane fade show active" id="pills-no-period" role="tabpanel" aria-labelledby="pills-no-period-tab">
-      <div id="list-no-period" class="list-group">
+      <!-- begin no period panel -->
+      <div class="tab-pane fade show active" id="pills-no-period" role="tabpanel" aria-labelledby="pills-no-period-tab">
+        <div id="list-no-period" class="list-group">
+        </div>
       </div>
-    </div>
-    <!-- end no period panel-->
+      <!-- end no period panel-->
 
-    <!-- begin daily panel -->
-    <div class="tab-pane fade" id="pills-daily" role="tabpanel" aria-labelledby="pills-daily-tab">
-      <div id="list-daily" class="list-group">
+      <!-- begin daily panel -->
+      <div class="tab-pane fade" id="pills-daily" role="tabpanel" aria-labelledby="pills-daily-tab">
+        <div id="list-daily" class="list-group">
+        </div>
       </div>
-    </div>
-    <!-- end daily panel-->
+      <!-- end daily panel-->
 
-    <!-- begin biweekly panel -->
-    <div class="tab-pane fade" id="pills-biweekly" role="tabpanel" aria-labelledby="pills-biweekly-tab">
-      <div id="list-biweekly" class="list-group">
+      <!-- begin biweekly panel -->
+      <div class="tab-pane fade" id="pills-biweekly" role="tabpanel" aria-labelledby="pills-biweekly-tab">
+        <div id="list-biweekly" class="list-group">
+        </div>
       </div>
-    </div>
-    <!-- end biweekly panel-->
+      <!-- end biweekly panel-->
 
-    <!-- begin monthly panel -->
-    <div class="tab-pane fade" id="pills-monthly" role="tabpanel" aria-labelledby="pills-monthly-tab">
-      <div id="list-monthly" class="list-group">
+      <!-- begin monthly panel -->
+      <div class="tab-pane fade" id="pills-monthly" role="tabpanel" aria-labelledby="pills-monthly-tab">
+        <div id="list-monthly" class="list-group">
+        </div>
       </div>
+      <!-- end monthly panel-->
     </div>
-    <!-- end monthly panel-->
   </div>
-</div>
 
 
-<script>
-    $(document).ready(function(){
+  <script>
+    $(document).ready(function() {
 
-      $('#detail-div').hide();
       // getting date input from
-      var date_input=$('input[name="from"]');
+    	var date_input = $('input[name="from"]');
 
-      // getting calendar's container
-      var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
-      // stablishing calendar's input options
-      var options={
-        format: 'dd/mm/yyyy',
-        container: container,
-        todayHighlight: true,
-        autoclose: true,
-      };
+    	// getting calendar's container
+    	var container = $('.bootstrap-iso form').length > 0 ? $('.bootstrap-iso form').parent() : "body";
+    	// stablishing calendar's input options
+    	var options = {
+    		format: 'dd/mm/yyyy',
+    		container: container,
+    		todayHighlight: true,
+    		autoclose: true,
+    		orientation: "top auto"
+    	};
 
-      //initialiazing date input from
-      date_input.datepicker(options);
+    	//initialiazing date input from
+    	date_input.datepicker(options);
 
-      // getting date input to
-      var date_input2 = $('input[name="to"]');
-      //initialiazing date input to
-      date_input2.datepicker(options)
+    	// getting date input to
+    	var date_input2 = $('input[name="to"]');
+    	//initialiazing date input to
+    	date_input2.datepicker(options)
     })
 
-    function loadData(type, data){
-
-        var listDivName;
-
-        if(type == 1){
-          // no period
-          listDivName = "list-no-period";
-        }else if(type == 2){
-          //daily
-          listDivName = "list-daily";
-        }else if(type == 3){
-          //biweekly
-          listDivName = "list-biweekly";
-        }else{
-          // monthly
-          listDivName = "list-monthly";
-        }
-
-        var listDiv = document.getElementById(listDivName);
-        var fields, value, name, date,l,s,d,h;
-        var indexOpeningParenthesis = data.indexOf("{");
-        var indexClosParenthesis = data.indexOf("}");
-
-        for(var i =0; i < data.length; i++){
-          if(indexOpeningParenthesis < 0  || indexClosParenthesis < 0 )return;
-          var temp = data.substring(indexOpeningParenthesis, indexClosParenthesis+2);
-          fields = JSON.parse(temp);
-          fields= fields['fields'];
-          if(fields == undefined) continue;
-          value = fields['value'];
-          name = fields['concept'][0];
-          date = fields['date_from'];
-
-          l = document.createElement("a");
-          l.setAttribute("href", "#");
-          l.setAttribute("class", "list-group-item list-group-item-action flex-column align-items-start");
-
-          d = document.createElement("div");
-          d.setAttribute("class", "d-flex w-100 justify-content-between");
-
-          h = document.createElement("h5");
-          h.setAttribute("class", "mb-1");
-          h.appendChild(document.createTextNode(name));
-
-          s = document.createElement("small");
-          s.appendChild(document.createTextNode(value));
-
-          d.appendChild(h);
-          d.appendChild(s);
-
-          l.appendChild(d);
-
-          s = document.createElement("small");
-          s.appendChild(document.createTextNode(date));
-          l.appendChild(s);
-
-          listDiv.appendChild(l)
-          indexOpeningParenthesis = data.indexOf("{", indexClosParenthesis);
-          indexClosParenthesis = data.indexOf("}", indexClosParenthesis+1);
-        }
-
-    }
-
-    function clearVisualizeDiv(listDivName){
-      var listDiv = document.getElementById(listDivName);
-      listDiv.innerHTML = "";
-    }
-
-    function goback(){
-      $('#main-page').show()
-      $('#detail-div').hide();
-      clearVisualizeDiv("list-no-period");
-      clearVisualizeDiv("list-daily");
-      clearVisualizeDiv("list-biweekly");
-      clearVisualizeDiv("list-monthly");
-    }
-    function loadIncomes(event){
-      $.ajax({
-        type: "GET",
-        url:"{% url 'visualize' %}",
-        dataType: "json",
-        async:true, // keep front end responsive to user input
-        data:{
-          from: $("#from-date").val(),
-          to: $("#to-date").val(),
-          type: 1
-        },
-        success: function(data){
-           $('#main-page').hide()
-           $('#detail-div').show();
-           document.getElementById('title-detail').innerHTML = "Incomes"
-           document.getElementById("range-date").innerHTML = $("#from-date").val() + " - " + $("#to-date").val();
-
-           no_period = data['unique'];
-           daily = data['daily'];
-           biweek = data['biweek'];
-           monthly = data['monthly'];
-
-           loadData(1, no_period);
-           loadData(2, daily);
-           loadData(3, biweek);
-           loadData(4, monthly);
-        },
-        error: function(){
 
 
-        }
-      })
-    }
 
-    function loadExpenses(event){
-      $.ajax({
-        type: "GET",
-        url:"{% url 'visualize' %}",
-        dataType: "json",
-        async:true, // keep front end responsive to user input
-        data:{
-          csrfmiddlewaretoken:'{{ csrf_token }}',
-          from: $("#from-date").val(),
-          to: $("#to-date").val(),
-          type: 0
-        },
-        success: function(data){
-          $('#main-page').hide()
-          $('#detail-div').show();
-          document.getElementById("range-date").innerHTML = $("#from-date").val() + " - " + $("#to-date").val();
-          document.getElementById('title-detail').innerHTML = "Expenses"
-          no_period = data['unique'];
-          daily = data['daily'];
-          biweek = data['biweek'];
-          monthly = data['monthly'];
 
-          loadData(1, no_period);
-          loadData(2, daily);
-          loadData(3, biweek);
-          loadData(4, monthly);
-        },
-        error: function(){
 
-        }
-      })
+  </script>
 
-    }
-</script>
-
-{% endblock content %}
+  {% endblock content %}

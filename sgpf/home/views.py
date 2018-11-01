@@ -19,7 +19,6 @@ from django.contrib.auth.decorators import login_required
 
 # Create your views here.
 
-
 def getNumberOfDays(date):
     #this functions gives the numbers of days a month has
     return calendar.monthrange(date.year, date.month)[1]
@@ -32,33 +31,36 @@ def checkIfSavingExist(user, year, month):
         previousSaving = Savings.objects.filter(user=user, year__lte=year).order_by('-month')
         if(len(previousSaving) > 0):
             saving.value = previousSaving[0].value
-            saving.save()
+        else:
+            saving.value = 0
+        saving.save()
 
 def DeleteDailyInput(request):
     #begin variables:
-    id_concept = int(request.GET['id_concept'])
+    concept = Concept.objects.get(id=int(request.GET['id_concept']))
     date = dt.strptime(str(request.GET['date']), "%d/%m/%Y") #daily input date
-    daily = DailyInput.objects.filter(id=id_concept, date_from__gte =date)
+    daily = DailyInput.objects.filter(concept=concept, date_from =date).values('concept__period', 'concept__type','savings_value','date_from','id')
     user = request.user.id
     #end variables
     if len(daily) > 0:
         daily = daily[0]
-        if daily.type == False: #if is an income
-            if daily.period == 0: # if it has no period
+        DailyInput.objects.get(id=daily['id']).delete()
+        if daily['concept__type'] == False: #if is an income
+            if daily['concept__period'] == 0: # if it has no period
                 saving = Savings.objects.get(user=user, month= daily.date_from.month, year=daily.date_from.year)
                 saving.value-= daily.savings_value
                 saving.save()
             else:
                 #getting old savings in which months are different from now().month
-                saving = Savings.objects.filter(user=user, month__gte = daily.date_from.month, year__gte = daily.date_from.year, month__lt=dt.now().month)
+                saving = Savings.objects.filter(user=user, month__gte = daily['date_from'].month, year__gte = daily['date_from'].year, month__lt=dt.now().month)
                 for s in saving:
-                    s.value -=  daily.savings_value
+                    s.value -=  daily['savings_value']
                     s.save()
-        daily.delete()
     data ={} # use empty json as response meaning end of processing
     return HttpResponse(json.dumps(data), content_type="application/json")
 
 def changeSavingsPercentage(request):
+    #use case: change savings percentage
     user = User.objects.get(id=request.user.id)
     currentPercentage=0
     sp = Savings_Percentage.objects.get(user=user)
@@ -126,6 +128,71 @@ def updatePast(user):
         saving.isFinalValue = True
         saving.save()
 
+def getSaldoSpecific(user,isExpense):
+        now = dt.now()
+        dailiesValue = Decimal(0.00)
+        # getting all income dailies
+        dailes = DailyInput.objects.filter(user=user, date_from__lte=dt.now(),concept__type=isExpense)
+
+        #getting values for this daily input types with no period
+        dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__lte= now).aggregate(suma=Sum('value'))['suma'] or 0.00)
+
+        #getting daily dailyInputs for this type
+        dailiesValue = Decimal(dailiesValue)
+
+
+        dailyInputs = dailes.filter(concept__period =1)
+        for di in dailyInputs:
+            if di.date_from.year < now.year:
+                day_of_year = (dt(month=12, day=31, year= di.date_from.year) - dt(di.year, 1, 1)).days + 1
+            else:
+                day_of_year = (dt.now() - dt(dt.now().year, 1, 1)).days + 1
+            dailiesValue +=Decimal(di.value) * Decimal(day_of_year)
+
+        #getting biweeklies
+        dailyBiweek = dailes.filter(concept__period=2)
+        multiplier = 0.00
+        for db in dailyBiweek:
+            if db.date_from.year < now.year:
+                num_years = now.year - db.date_from.year -1
+                numMiddles = (12 - db.date_from.month)*2+1
+                if(db.date_from.day<=14):
+                    numMiddles+=1
+                multiplier = num_years*24 + numMiddles
+            else:
+                numMiddles = (12 - db.date_from.month)*2+1
+                if(db.date_from.day<=14):
+                    numMiddles+=1
+                multiplier = numMiddles
+            dailiesValue +=Decimal(di.value) * Decimal(multiplier)
+
+
+        dailyMonth = dailes.filter(concept__period=2)
+        multiplier = 0.00
+        for db in dailyMonth:
+            if db.date_from.year < now.year:
+                num_years = now.year - db.date_from.year -1
+                numMiddles = (12 - db.date_from.month)+1
+                if(db.date_from.day<=14):
+                    numMiddles+=1
+                multiplier = num_years*12 + numMiddles
+            else:
+                numMiddles = (12 - db.date_from.month)+1
+                multiplier = numMiddles
+            dailiesValue +=Decimal(di.value) * Decimal(multiplier)
+
+        return dailiesValue
+
+def getSaldo(user):
+    income  = getSaldoSpecific(user, False)
+    expenses= getSaldoSpecific(user, True)
+    return income - expenses
+
+def canExpense(user, value):
+    saldo = getSaldo(user)
+    if saldo  >= value:
+        return True
+    return False
 
 def getIncomeOrExpense(isExp, user, useMonth = False):
     now = dt.now()
@@ -133,11 +200,13 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
     # getting all dailies of specific type (expense or income)
     dailes = DailyInput.objects.filter(user=user, date_from__lte=dt.now(),concept__type=isExp)
 
+
     #getting values for this daily input types with no period
     if not useMonth:
         dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__gte= dt(year=dt.now().year, day=1, month=dt.now().month)).aggregate(suma=Sum('value'))['suma'] or 0.00)
     else:
         dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__gte= dt(year=dt.now().year, month=1, day=1)).aggregate(suma=Sum('value'))['suma'] or 0.00)
+
 
     #getting daily dailyInputs for this type
     dailiesValue = Decimal(dailiesValue)
@@ -146,6 +215,8 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
     else:
         day_of_year = (dt.now() - dt(dt.now().year, 1, 1)).days + 1
         dailiesValue +=Decimal( dailes.filter(concept__period=1).aggregate(suma=Sum('value'))['suma'] or Decimal(0)) * Decimal(day_of_year)
+
+    print(dailiesValue)
 
     #getting biweeklies
     multiplier = 0.00
@@ -187,7 +258,9 @@ def getSummaryYear(user):
 
 def getSummaryMonth(user):
     incomes = getIncomeOrExpense(False, user, True)
+    print(incomes,"ponisf")
     expenses = getIncomeOrExpense(True, user, True)
+    print(expenses,"asdf")
     return incomes - expenses
 
 
@@ -198,9 +271,14 @@ def home(request):
     if request.user.is_authenticated:
         user = User.objects.get(id=request.user.id)
         summaryYear = getSummaryYear(user)
+
         summaryMonth = getSummaryMonth(user)
+
+        if summaryMonth <0:
+            summaryMonth = 0;
         todayDate = dt.today().strftime('%d/%m/%Y')
         currentSaving = getCurrentSaving(user)
+        print(currentSaving)
         updatePast(user)
         context = {'number':number,'currentSaving':currentSaving,
                     'todayDate': todayDate, 'summaryYear':summaryYear,
@@ -234,7 +312,7 @@ def SaveConcept(request):
                 newConcept.save()
             else:
                 message = "CONCEPT MODIFIED"
-                concept = Concept.objects.filter(id_user=current_user, id=form.cleaned_data['isNewConcept'])[0]
+                concept = Concept.objects.filter(user=current_user, id=form.cleaned_data['isNewConcept'])[0]
                 concept.name = form.cleaned_data['name']
                 concept.value = form.cleaned_data['value']
                 concept.period = form.cleaned_data['period']
@@ -247,6 +325,7 @@ def SaveConcept(request):
 
 
 def disableConcept(request):
+    #use case: disable concepts
     # function used for ajax
     concept = Concept.objects.get(user__id =request.user.id, id= request.GET['id_concept'])
             # get concept of requsted user with specific id
@@ -258,7 +337,9 @@ def disableConcept(request):
 
 
 def AddDailyInput(request):
+    # use case: Add daily input
     current_user = User.objects.get(id=request.user.id)
+    dailies = DailyInput.objects.filter(user=request.user).order_by('-id').values('value','concept__name', 'concept__type', 'date_from', 'savings_value')
     conceptos = getConcepts(current_user) # variable meant to be sent to interface
     number = 2 # variable sent to interface, used to highlight home tab in navbar
     isDailyInput = False # we dont have any message yet to show to user
@@ -280,10 +361,15 @@ def AddDailyInput(request):
             from_date = form.cleaned_data['from_date']
             percentage = Savings_Percentage.objects.get(user=current_user).percentage
             savings_value = percentage*value
+            if(concept.type == True):
+                savings_value = 0
+            else:
+                value-=savings_value
             #end variables
             dailyInput = DailyInput(user=current_user, concept=concept, value=value, date_from =from_date , savings_value=savings_value)
 
-            checkIfSavingExist(current_user, dailyInput.date_from.month, dailyInput.date_from.year)
+            checkIfSavingExist(current_user, dailyInput.date_from.year,dailyInput.date_from.month)
+
 
             if concept.period == 0 and concept.type == False:
                 # if is a concept that has no period and is an income then sum to savings
@@ -296,8 +382,15 @@ def AddDailyInput(request):
                 saving.value+=savings_value
                 saving.save()
 
-                dailyInput.value -= savings_value
-            dailyInput.save()
+                dailyInput.save()
+            elif concept.type == True and concept.period == 0:
+
+                if canExpense(current_user, dailyInput.value):
+                    dailyInput.save()
+                else:
+                    message = "don't have enough funds"
+            else:
+                dailyInput.save()
         else:
             #form is not valid, dont have all data to create new daily input
             message = "couldn't save this daily input"
@@ -305,25 +398,27 @@ def AddDailyInput(request):
     form = DailyInputForm()
     template = loader.get_template('dailyInput.html')
     context = {'number':number, 'conceptos': conceptos, 'todayDate':todayDate,
-                'isDailyInput': isDailyInput, 'form': form, 'message':message}
+                'isDailyInput': isDailyInput, 'form': form, 'message':message,
+                'dailies':dailies}
     return HttpResponse(template.render(context, request))
 
 
 def visualize(request):
+
     type = request.GET['type']
     from_date = dt.strptime(str(request.GET['from']), "%d/%m/%Y")
     to_date = dt.strptime(str(request.GET['to']), "%d/%m/%Y")
-    print(from_date.day)
     dailyUnique = ""
     dailyDaily = ""
     dailyBiweekly = ""
     dailyMonthly = ""
     current_user = User.objects.get(id=request.user.id)
-    print(calendar.monthrange(from_date.year, from_date.month)[1])
+
     if type == '1':
         # we should load Incomes
         dailyUnique= DailyInput.objects.filter(user=current_user, concept__period=0, concept__type = False, date_from__gte = from_date, date_from__lte = to_date).order_by('-date_from')
-        dailyDaily= DailyInput.objects.filter(user=current_user, concept__period=1, concept__type = False, date_from__lte = to_date).order_by('-date_from')
+
+        dailyDaily= DailyInput.objects.all().filter(user=current_user, concept__period=1).filter(concept__type =False,date_from__lte = to_date ).order_by('-date_from')
         if (from_date.day <=14 and to_date.day>=14 and to_date.month == from_date.month )or to_date.month > from_date.month:
             # check if there is some 14th of some month in this range
             dailyBiweekly= DailyInput.objects.filter(user=current_user, concept__period=2, concept__type = False, date_from__lte = to_date).order_by('-date_from')
@@ -333,7 +428,7 @@ def visualize(request):
     else:
         # we should load expenses
         dailyUnique= DailyInput.objects.filter(user=current_user, concept__period=0, concept__type =True, date_from__gte = from_date, date_from__lte = to_date).order_by('-date_from')
-        dailyDaily= DailyInput.objects.filter(user=current_user, concept__period=1, concept__type =True, date_from__lte = to_date).order_by('-date_from')
+        dailyDaily= DailyInput.objects.filter(user=current_user, concept__period=1, concept__type =True,  date_from__lte = to_date).order_by('-date_from')
         if (from_date.day <=14 and to_date.day>=14 and to_date.month == from_date.month ) or to_date.month > from_date.month:
             # check if there is some 14th of some month in this range
             dailyBiweekly= DailyInput.objects.filter(user=current_user, concept__period=2, concept__type =True, date_from__lte = to_date).order_by('-date_from')
@@ -407,7 +502,7 @@ def visualizeExpenses(request):
     dailyMonthly = ""
     current_user = User.objects.get(id=request.user.id)
     dailyUnique= DailyInput.objects.filter(user=current_user, concept__period=0, concept__type =True, date_from__gte = from_date, date_from__lte = to_date).order_by('-date_from')
-    dailyDaily= DailyInput.objects.filter(user=current_user, concept__period=1, concept__type =True, date_from__lte = to_date).order_by('-date_from')
+    dailyDaily= DailyInput.objects.filter(user=current_user, concept__period=1, concept__type =True, date_from__gte = to_date).order_by('-date_from')
     if (from_date.day <=14 and to_date.day>=14 and to_date.month == from_date.month ) or to_date.month > from_date.month:
         # check if there is some 14th of some month in this range
         dailyBiweekly= DailyInput.objects.filter(user=current_user, concept__period=2, concept__type =True, date_from__lte = to_date).order_by('-date_from')

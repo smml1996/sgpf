@@ -13,16 +13,24 @@
 	<!-- used for bootstrap's grid system -->
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-	<!-- bootstrap dependecies -->
-	<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css'%}" media="screen,projection">
-	<link rel="stylesheet" type="text/css" href="{% static 'css/all.css'%}">
 
-	<!-- own css -->
-  <link rel="stylesheet" type="text/css" href="{% static 'css/mainStyles.css'%}" media="screen,projection">
+
+
 
 	<!-- fancy input calendar dependecies -->
 	<link rel="stylesheet" href="{% static 'css/bootstrap-datepicker3.css' %}"/>
 	<script type="text/javascript" src="{% static 'js/jquery-1.11.3.min.js' %}"></script>
+
+	<!-- table dependecies -- >
+
+	<link rel="stylesheet" href="{% static 'DataTables-1.10.18/css/jquery.dataTables.min.css' %}"/>
+	<link rel="stylesheet" href="{% static 'DataTables-1.10.18/css/dataTables.bootstrap4.min.css' %}"/>
+	<!-- bootstrap dependecies -->
+	<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css'%}" media="screen,projection">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/all.css'%}">
+	<!-- own css -->
+	<link rel="stylesheet" type="text/css" href="{% static 'css/mainStyles.css'%}" media="screen,projection">
+
 
 </head>
 <body style="height:100vh;">
@@ -81,8 +89,17 @@
 <script src="{% static 'js/jquery-3.3.1.slim.min.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
 <script src="http://code.jquery.com/jquery-1.9.1.js"></script>
- <script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>
+<!-- <script src="{% static 'js/jquery.js' %}"></script> -->
+<script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>
 <script src="{% static 'js/bootstrap.min.js' %}"></script>
+
+<!--table dependecies (daily input) -->
+
+<script src="{% static 'js/datatables.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'DataTables-1.10.18/js/jquery.dataTables.min.js'%}"></script>
+<script type="text/javascript" src="{% static 'DataTables-1.10.18/js/dataTables.bootstrap4.min.js'%}"></script>
+
+
 
 <!-- import library to have a fancy calendar input, just down this comment -->
 <script type="text/javascript" src="{% static 'js/bootstrap-datepicker.min.js'%}"></script>
@@ -93,6 +110,12 @@
 <script>
 
 $( document ).ready(function() {
+
+	$('[data-toggle="tooltip"]').tooltip();
+
+
+	$('#detail-div').hide();
+
 		// variable "number" sent from backend to highlight navbar tabs
     if({{number}} == 1){
 			$('#li-1').addClass('active');
@@ -139,10 +162,12 @@ function deleteConcept(e){
 			},
 			success: function(){
 				// say to user that concept has been disabled
+				$("#alert_succ").show();
 				document.getElementById('alertMessage').innerHTML = "Concept Disabled, please refresh page";
 				console.log("succeed");
 			},
 			error: function(){
+				$("#alert_wrong").show();
 				document.getElementById('alertMessageWrong').innerHTML = "Something went wrong, please try again";
 				console.log("error");
 
@@ -203,6 +228,157 @@ function deleteConcept(e){
 	}
 
 
+	function loadIncomes(event) {
+		$.ajax({
+			type: "GET",
+			url: "{% url 'visualize' %}",
+			dataType: "json",
+			async: true, // keep front end responsive to user input
+			data: {
+				from: $("#from-date").val(),
+				to: $("#to-date").val(),
+				type: 1
+			},
+			success: function(data) {
+				console.log(data);
+				$('#main-page').hide()
+				$('#detail-div').show();
+				document.getElementById('title-detail').innerHTML = "Incomes"
+				document.getElementById("range-date").innerHTML = $("#from-date").val() + " - " + $("#to-date").val();
+
+				no_period = data['unique'];
+				daily = data['daily'];
+				biweek = data['biweek'];
+				monthly = data['monthly'];
+
+				loadData(1, no_period);
+				loadData(2, daily);
+				loadData(3, biweek);
+				loadData(4, monthly);
+			},
+			error: function() {
+
+
+			}
+		})
+	}
+
+
+	function clearVisualizeDiv(listDivName) {
+		var listDiv = document.getElementById(listDivName);
+		listDiv.innerHTML = "";
+	}
+
+	function goback() {
+		$('#main-page').show()
+		$('#detail-div').hide();
+		clearVisualizeDiv("list-no-period");
+		clearVisualizeDiv("list-daily");
+		clearVisualizeDiv("list-biweekly");
+		clearVisualizeDiv("list-monthly");
+	}
+
+	function loadExpenses(event) {
+		$.ajax({
+			type: "GET",
+			url: "{% url 'visualize' %}",
+			dataType: "json",
+			async: true, // keep front end responsive to user input
+			data: {
+				csrfmiddlewaretoken: '{{ csrf_token }}',
+				from: $("#from-date").val(),
+				to: $("#to-date").val(),
+				type: 0
+			},
+			success: function(data) {
+				$('#main-page').hide()
+				$('#detail-div').show();
+				document.getElementById("range-date").innerHTML = $("#from-date").val() + " - " + $("#to-date").val();
+				document.getElementById('title-detail').innerHTML = "Expenses"
+				no_period = data['unique'];
+				daily = data['daily'];
+				biweek = data['biweek'];
+				monthly = data['monthly'];
+
+				loadData(1, no_period);
+				loadData(2, daily);
+				loadData(3, biweek);
+				loadData(4, monthly);
+			},
+			error: function() {
+				console.log("error");
+			}
+		})
+
+	}
+
+
+
+	function loadData(type, data) {
+
+		var listDivName;
+
+		if (type == 1) {
+			// no period
+			listDivName = "list-no-period";
+		} else if (type == 2) {
+			//daily
+			listDivName = "list-daily";
+		} else if (type == 3) {
+			//biweekly
+			listDivName = "list-biweekly";
+		} else {
+			// monthly
+			listDivName = "list-monthly";
+		}
+
+		var listDiv = document.getElementById(listDivName);
+		var fields, value, name, date, l, s, d, h;
+		var indexOpeningParenthesis = data.indexOf("{");
+		var indexClosParenthesis = data.indexOf("}");
+		for (var i = 0; i < data.length; i++) {
+			if (indexOpeningParenthesis < 0 || indexClosParenthesis < 0) return;
+			console.log("opening: " + indexOpeningParenthesis)
+			console.log("closing: " + indexClosParenthesis)
+			var temp = data.substring(indexOpeningParenthesis, indexClosParenthesis + 2);
+			console.log(temp);
+			fields = JSON.parse(temp);
+			fields = fields['fields'];
+			if (fields == undefined) continue;
+			value = fields['value'];
+			name = fields['concept'][0];
+			date = fields['date_from'];
+
+			l = document.createElement("a");
+			l.setAttribute("href", "#");
+			l.setAttribute("class", "list-group-item list-group-item-action flex-column align-items-start");
+
+			d = document.createElement("div");
+			d.setAttribute("class", "d-flex w-100 justify-content-between");
+
+			h = document.createElement("h5");
+			h.setAttribute("class", "mb-1");
+			h.appendChild(document.createTextNode(name));
+
+			s = document.createElement("small");
+			s.appendChild(document.createTextNode(value));
+
+			d.appendChild(h);
+			d.appendChild(s);
+
+			l.appendChild(d);
+
+			s = document.createElement("small");
+			s.appendChild(document.createTextNode(date));
+			l.appendChild(s);
+
+			listDiv.appendChild(l)
+			indexOpeningParenthesis = data.indexOf("{", indexClosParenthesis+1);
+			indexClosParenthesis = data.indexOf("}", indexOpeningParenthesis );
+
+		}
+
+	}
 
 </script>
 
