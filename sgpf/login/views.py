@@ -19,6 +19,7 @@ def isEmailValid(email):
     return len(temp) == 0 # si la longitud del <queryset> es 0 entonce el email no esta en uso
 
 def signup(request):
+    #use case: Sign Up
     message = "" # help messages for user
     if request.method == 'POST':
         form = SignUpForm(request.POST) # get form filled by user

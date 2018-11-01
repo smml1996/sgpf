@@ -36,6 +36,7 @@ def checkIfSavingExist(user, year, month):
         saving.save()
 
 def DeleteDailyInput(request):
+    #use case: delete daily input
     #begin variables:
     concept = Concept.objects.get(id=int(request.GET['id_concept']))
     date = dt.strptime(str(request.GET['date']), "%d/%m/%Y") #daily input date
@@ -214,9 +215,11 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
         dailiesValue +=Decimal(( dailes.filter(concept__period=1).aggregate(suma=Sum('value'))['suma'] or 0.00) * dt.now().day)
     else:
         day_of_year = (dt.now() - dt(dt.now().year, 1, 1)).days + 1
-        dailiesValue +=Decimal( dailes.filter(concept__period=1).aggregate(suma=Sum('value'))['suma'] or Decimal(0)) * Decimal(day_of_year)
-
-    print(dailiesValue)
+        dailiesValue +=Decimal( dailes.filter(concept__period=1,  date_from__lt=dt(year=dt.now().year, month=1,day=1)).aggregate(suma=Sum('value'))['suma'] or Decimal(0)) * Decimal(day_of_year)
+        temp = dailes.filter(concept__period=1, date_from__gte= dt(year=dt.now().year, month=1, day=1))
+        for d in temp:
+            day_of_year_daily = ( (dt(year= d.date_from.year, month=d.date_from.month, day=d.date_from.day) - dt(d.date_from.year, 1, 1)).days )
+            dailiesValue+= Decimal(d.value * (day_of_year - day_of_year_daily))
 
     #getting biweeklies
     multiplier = 0.00
@@ -233,9 +236,16 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
         multiplier-=1
 
     #multiplier = Decimal(multiplier)
-    dailiesValue += Decimal((dailes.filter(concept__period=2).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
-
-
+    if useMonth:
+        dailiesValue += Decimal((dailes.filter(concept__period=2).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
+    else:
+        dailiesValue += Decimal((dailes.filter(concept__period=2, date_from__lt=dt(year=dt.now().year, month=1,day=1)).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
+        temp = dailes.filter(concept__period=2, date_from__gte=dt(year=dt.now().year, month=1,day=1))
+        for d in temp:
+            tempMultiplier = (d.date_from.month-1) *2
+            if d.date_from.day >=14:
+                tempMultiplier-=1
+            dailiesValue+= Decimal(d.value * (multiplier + tempMultiplier))
     #getting monthlies
     if useMonth:
         multiplier = 1
@@ -245,7 +255,15 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
     if dt.now().day != getNumberOfDays(now):
         multiplier-=1
     #multiplier = Decimal(mutiplier)
-    dailiesValue += Decimal((dailes.filter(concept__period=3).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
+    if useMonth or True:
+        dailiesValue += Decimal((dailes.filter(concept__period=3).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
+    else:
+        dailiesValue += Decimal((dailes.filter(concept__period=3, date_from__lt=dt(year=dt.now().year, month=1,day=1)).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
+        temp = dailes.filter(concept__period=3, date_from__gte=dt(year=dt.now().year, month=1,day=1))
+        for d in temp:
+            tempMultiplier = multiplier - (d.date_from.month-1)
+            dailiesValue+=Decimal(d.value*tempMultiplier)
+
 
     return dailiesValue
 
@@ -290,6 +308,7 @@ def home(request):
 
 
 def SaveConcept(request):
+    #use case: Save Concept
     number= 3 # variable sent to interface, used to highlight home tab in navbar
     current_user = User.objects.get(id=request.user.id)
     form = ConfigurationForm()
@@ -415,6 +434,7 @@ def visualize(request):
     current_user = User.objects.get(id=request.user.id)
 
     if type == '1':
+        #use case: visualize incomes
         # we should load Incomes
         dailyUnique= DailyInput.objects.filter(user=current_user, concept__period=0, concept__type = False, date_from__gte = from_date, date_from__lte = to_date).order_by('-date_from')
 
@@ -426,6 +446,7 @@ def visualize(request):
             #check if there is some end of month in this range
             dailyMonthly= DailyInput.objects.filter(user=current_user, concept__period=3, concept__type = False, date_from__lte = to_date).order_by('-date_from')
     else:
+        #use case: visualize expenses
         # we should load expenses
         dailyUnique= DailyInput.objects.filter(user=current_user, concept__period=0, concept__type =True, date_from__gte = from_date, date_from__lte = to_date).order_by('-date_from')
         dailyDaily= DailyInput.objects.filter(user=current_user, concept__period=1, concept__type =True,  date_from__lte = to_date).order_by('-date_from')
