@@ -95,15 +95,8 @@ def getCurrentSaving(user, month=dt.now().month, year=dt.now().year , d=dt.now()
     currentSaving = Savings.objects.get(user=user, year=year, month=month).value #this gives the savings that has no period por this year's month
 
     #begin calculate daily savings
-    try:
-        currentSaving+= (DailyInput.objects.filter( user=user,date_from__lte = now,concept__type=False, concept__period=1).aggregate(suma=Sum('savings_value'))['suma'] or 0)*d
-    except Exception as e:
-        print("exception ocurred")
+    currentSaving+= (DailyInput.objects.filter( user=user,date_from__lte = now,concept__type=False, concept__period=1).aggregate(suma=Sum('savings_value'))['suma'] or 0)*d
     #end calculate daily savings
-
-    #begin calculate monthly savings
-    currentSaving+= DailyInput.objects.filter( user=user,date_from__lte = now,concept__type=False, concept__period=3).aggregate(suma=Sum('savings_value'))['suma'] or 0
-    #end begin monthly savings
 
     #begin calculate monthly
     if getNumberOfDays(now) == d:
@@ -123,8 +116,8 @@ def updatePast(user):
     savingsPast = Savings.objects.filter(user=user, month__lt = now.month, year__lte = now.year, isFinalValue=False)
 
     for saving in savingsPast:
-        #for each saving of each month we want to know if that month has passed and we get to know
-        #how much the user has saved
+        # for each saving of each month we want to know if that month has passed and we get to know
+        # how much the user has saved
         saving.value = getCurrentSaving(user, saving.month, saving.year, calendar.monthrange(saving.year, saving.month)[1])
         saving.isFinalValue = True
         saving.save()
@@ -137,7 +130,6 @@ def getSaldoSpecific(user,isExpense):
 
         #getting values for this daily input types with no period
         dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__lte= now).aggregate(suma=Sum('value'))['suma'] or 0.00)
-
         #getting daily dailyInputs for this type
         dailiesValue = Decimal(dailiesValue)
 
@@ -146,9 +138,11 @@ def getSaldoSpecific(user,isExpense):
         for di in dailyInputs:
             if di.date_from.year < now.year:
                 day_of_year = (dt(month=12, day=31, year= di.date_from.year) - dt(di.year, 1, 1)).days + 1
+                dailiesValue +=Decimal(di.value) * Decimal(day_of_year)
             else:
                 day_of_year = (dt.now() - dt(dt.now().year, 1, 1)).days + 1
-            dailiesValue +=Decimal(di.value) * Decimal(day_of_year)
+                diference = day_of_year - ((dt(year=di.date_from.year, month=di.date_from.month, day=di.date_from.day ) - dt(di.date_from.year, 1, 1)).days + 1)
+                dailiesValue +=Decimal(di.value) * Decimal(diference)
 
         #getting biweeklies
         dailyBiweek = dailes.filter(concept__period=2)
@@ -168,7 +162,7 @@ def getSaldoSpecific(user,isExpense):
             dailiesValue +=Decimal(di.value) * Decimal(multiplier)
 
 
-        dailyMonth = dailes.filter(concept__period=2)
+        dailyMonth = dailes.filter(concept__period=3)
         multiplier = 0.00
         for db in dailyMonth:
             if db.date_from.year < now.year:
