@@ -3,17 +3,32 @@
 {% block content %}
 
 
-<div class="container" style="margin-top: 10vh;">
-
+<div class="container col-sm-4" style="margin-top: 10vh;">
+<form method="POST">
+  {% csrf_token %}
   <!-- begin: input value -->
   <div class="row" style="margin-top:3vh;">
+    {% if form.errors %}
+    {% for field in form %}
+        {% for error in field.errors %}
+            <div class="alert alert-danger">
+                <strong>{{ error|escape }}</strong>
+            </div>
+        {% endfor %}
+    {% endfor %}
+    {% for error in form.non_field_errors %}
+        <div class="alert alert-danger">
+            <strong>{{ error|escape }}</strong>
+        </div>
+    {% endfor %}
+{% endif %}
     <div class="input-group mb-3">
       <!-- begin: addon input -->
       <div class="input-group-prepend">
         <span class="input-group-text" id="basic-addon1"><i class="fas fa-money-bill-alt"></i></span>
       </div>
       <!-- end: addon input -->
-      <input id="value" type="text" class="form-control" placeholder="pseudo-value" aria-label="Username" aria-describedby="basic-addon1">
+      <input id="value"name="{{ form.value.html_name }}" step="0.01" min="0" type="text" class="form-control" placeholder="pseudo-value" aria-label="Username" aria-describedby="basic-addon1">
     </div>
   </div>
   <!-- end: input value -->
@@ -21,9 +36,10 @@
 
   <!-- begin: input type -->
   <div class="row" style="margin-top:3vh;">
-    <select id="type" class="custom-select">
-      <option value="0" selected>Expense</option>
-      <option value="1">Income</option>
+    <select class="custom-select" name="{{ form.isExpense.html_name }}" id="type">
+      {% for val, displayVal in form.fields.isExpense.choices %}
+        <option value= "{{ val }}">{{ displayVal }}</option>
+      {% endfor %}
     </select>
   </div>
   <!-- end: input type -->
@@ -38,36 +54,36 @@
         </span>
       </div>
       <!-- end: addon input -->
-      <input id="from-date" type="text" name="from" class="form-control" placeholder="from"/>
+      <input id="from-date" name="{{ form.from_date.html_name }}" type="text" name="from" class="form-control" placeholder="from"/>
     </div>
   </div>
   <!-- end: input from-date-->
 
   <!-- begin: select period-->
   <div class="row" style="margin-top:3vh;">
-    <select id="periodSelect" class="custom-select">
-      <option value="0" selected>No period</option>
-      <option value="1">daily</option>
-      <option value="2">biweekly</option>
-      <option value="3">monthly</option>
+    <select class="custom-select" name ="{{ form.period.html_name }}" id="period">
+      {% for val, displayVal in form.fields.period.choices %}
+        <option value= "{{ val }}">{{ displayVal }}</option>
+      {% endfor %}
     </select>
   </div>
   <!-- end: select period-->
 
   <!-- begin: button -->
   <div class="row justify-content-center" style="margin-top:3vh;">
-    <button type="button" class="btn btn-info">Simulate this!</button>
+    <button type="submit" class="btn btn-info" >Simulate this!</button>
   </div>
   <!-- end: button -->
 
+</form>
  <!-- begin: summary -->
   <div class="row"style="margin-top:10vh;">
     <div class="card" style="width: 40vw;margin-left:auto; margin-right:auto;">
       <div class="card-body">
         <h5 class="card-title">Summary</h5>
 
-        <p class="card-text text-center">All year: <span id="all-year"> 0.00</span></p>
-          <p class="card-text text-center">Month: <span id="all-month"> 0.00</span></p>
+        <p class="card-text text-center">All year: <span id="all-year"> {{ summaryYear }}</span></p>
+          <p class="card-text text-center">Month: <span id="all-month">{{ summaryMonth}}</span></p>
       </div>
     </div>
   </div>
@@ -79,17 +95,21 @@
 
 <script>
     $(document).ready(function(){
-      var date_input=$('input[name="from"]');
+      var date_input=$('input[name="from_date"]');
       var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
-      var options={
-        format: 'mm/dd/yyyy',
-        container: container,
-        todayHighlight: true,
-        autoclose: true,
-      };
+      var options = {
+    		format: 'dd/mm/yyyy',
+    		container: container,
+    		todayHighlight: true,
+    		autoclose: true,
+    		orientation: "top auto"
+    	};
+
       date_input.datepicker(options);
 
     })
+
+
 </script>
 
 

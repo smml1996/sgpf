@@ -8,7 +8,7 @@
   <div class="row justify-content-center">
     <div class="form-group">
       <label for="formControlRange">For the last <span id="rangeValue"> </span> <span id="time-period">months: </label>
-      <input id="formControlRange" type="range" name="rangeInput" value="5" min="5" max="100" onchange="updateTextInput(this.value);">
+      <input id="formControlRange" type="range" name="rangeInput" value="5" min="5" max="100" onchange="getSavings(this.value);">
     </div>
   </div>
   <!-- end: input number months to be shown -->
@@ -22,42 +22,96 @@
 </div>
 
 <script>
+
+function buildData(){
+  // default report to be shown to user in get method
+  var answer = [];
+  var month, year;
+  {% for i in savings %}
+    month = {{i.month}};
+    year = {{i.year}};
+    answer.push({y: {{i.value}}, label: ("01/"+ month.toString()+ "/"+ year.toString())});
+  {% endfor %}
+  return answer;
+}
+
 $(document).ready(function(){
+
+
   document.getElementById('rangeValue').innerHTML=5;
 
   var chart = new CanvasJS.Chart("chartContainer", {
   	animationEnabled: true,
-  	theme: "light2", // "light1", "light2", "dark1", "dark2"
+  	theme: "light2",
   	title:{
   		text: "Remaining Income Percentage"
   	},
   	axisY: {
-  		title: "Savings Percentage (%)"
+  		title: "Savings Value"
   	},
   	data: [{
   		type: "column",
   		showInLegend: false,
   		legendMarkerColor: "grey",
-  		dataPoints: [
-  			{ y: 54.5, label: "01/09/2018" },
-  			{ y: 39,  label: "01/08/2018" },
-  			{ y: 29,  label: "01/07/2018" },
-  			{ y: 70,  label: "01/06/2018" },
-  			{ y: 87.4,  label: "01/05/2018" },
-
-  		]
+  		dataPoints: buildData()
   	}]
   });
-  chart.render();
+  chart.render(); // build chart
 
 });
-function updateTextInput(val) {
+function getSavings(months) {
+    // called when range input changes
     document.getElementById('rangeValue').innerHTML=val;
+    $.ajax({
+      type: "GET",
+      url: "{% url 'updateSavings' %}",
+      dataType: "json",
+      async: true, // keep front end responsive to user input
+      data: {
+        months: $("#formControlRange").val(),
+
+      },
+      success: function(data) {
+        var i = data.indexOf('"fields"', 0);
+        var j = data.indexOf('}', i);
+        var tempJson, myjson;
+        var chartData = [];
+        for(; i !=-1;){
+            tempJson = data.substring(i + ('"fields: "').length, j+1)
+            myjson = JSON.parse(tempJson);
+            month = myjson['month'];
+            year = myjson[ 'year'];
+            chartData.push({y: parseFloat(myjson['value']), label: ("01/"+ month+ "/"+ year)});
+            i = data.indexOf('"fields"', i+1);
+            j = data.indexOf('}', i);
+
+        }
+        var chart2 = new CanvasJS.Chart("chartContainer", {
+          animationEnabled: true,
+          theme: "light2", // "light1", "light2", "dark1", "dark2"
+          title:{
+            text: "Remaining Income Percentage"
+          },
+          axisY: {
+            title: "Savings Value"
+          },
+          data: [{
+            type: "column",
+            showInLegend: false,
+            legendMarkerColor: "grey",
+            dataPoints: chartData
+          }]
+        });
+        chart2.render();
+
+      },
+      error: function() {
+        console.log("error");
+
+      }
+    })
 }
 
-function updateTimePeriod(val){
-  document.getElementById('time-period').innerHTML =val;
-}
 
 
 </script>

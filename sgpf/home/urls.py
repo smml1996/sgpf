@@ -10,6 +10,7 @@ urlpatterns = [
 	url(r'^savings_history/$',views.visualizeSavings, name="savings"),
 	url(r'^delete_concept/$', views.disableConcept, name='deleteConcept'),
 	url(r'^delete_daily/$', views.DeleteDailyInput, name='deleteDailyInput'),
+	url(r'^update_saving/$', views.getUpdateUserInputSaving, name='updateSavings'),
 	url(r'^$', views.home, name='home'), # default page to be loaded
 
 ]

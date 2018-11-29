@@ -22,6 +22,22 @@ class ConfigurationForm(forms.Form):
 class ChangePercentageForm(forms.Form):
     value = forms.DecimalField(decimal_places=2)
 
+class simulateBalanceForm(forms.Form):
+    value = forms.DecimalField(decimal_places=2)
+    period = forms.ChoiceField(choices=(
+        (0, 'No Period'),
+        (1, 'Daily'),
+        (2, 'Biweekly'),
+        (3, 'Monthly')
+    ))
+
+    isExpense = forms.ChoiceField(choices=(
+        (True, 'Expense'),
+        (False, 'Income'),
+    ))
+    from_date = forms.DateField(input_formats=['%d/%m/%Y'])
+
+
 class DailyInputForm(forms.Form):
     # form inputs for dailyInput.html
     id_concepto = forms.IntegerField()

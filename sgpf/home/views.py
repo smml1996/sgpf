@@ -5,6 +5,7 @@ from .models import Concept
 from django.contrib.auth.models import User
 from .models import Concept, DailyInput
 from .forms import ConfigurationForm, DailyInputForm, ChangePercentageForm
+from .forms import simulateBalanceForm
 import json
 from datetime import datetime as dt
 from django.contrib.auth import views as auth_views
@@ -25,14 +26,17 @@ def getNumberOfDays(date):
 
 def checkIfSavingExist(user, year, month):
     #function to see if we need to create a new saving register for this month
+
     saving = Savings.objects.filter(year=year, month=month, user=user)
+
     if len(saving) == 0:
-        saving = Savings(year=year, month =month, user=user)
-        previousSaving = Savings.objects.filter(user=user, year__lte=year).order_by('-month')
+        saving = Savings(year=year, month =month, user=user) # create saving if user don't have it for this month of the year
+        previousSaving = Savings.objects.filter(user=user, year__lte=year).order_by('-month') # get last saving
+
         if(len(previousSaving) > 0):
-            saving.value = previousSaving[0].value
+            saving.value = previousSaving[0].value #initial value is the previos saving if it exists
         else:
-            saving.value = 0
+            saving.value = 0 # if no previous saving, then it is 0
         saving.save()
 
 def DeleteDailyInput(request):
@@ -97,7 +101,7 @@ def getCurrentSaving(user, month=dt.now().month, year=dt.now().year , d=dt.now()
     #begin calculate daily savings
     currentSaving+= (DailyInput.objects.filter( user=user,date_from__lte = now,concept__type=False, concept__period=1).aggregate(suma=Sum('savings_value'))['suma'] or 0)*d
     #end calculate daily savings
-
+    print(currentSaving)
     #begin calculate monthly
     if getNumberOfDays(now) == d:
         currentSaving+= DailyInput.objects.filter( user=user,date_from__lte = now,concept__type=False, concept__period=3).aggregate(suma=Sum('savings_value'))['suma'] or 0
@@ -134,7 +138,7 @@ def getSaldoSpecific(user,isExpense):
         dailiesValue = Decimal(dailiesValue)
 
 
-        dailyInputs = dailes.filter(concept__period =1)
+        dailyInputs = dailes.filter(concept__period =1) # get daily inputs that have as period daily
         for di in dailyInputs:
             if di.date_from.year < now.year:
                 day_of_year = (dt(month=12, day=31, year= di.date_from.year) - dt(di.year, 1, 1)).days + 1
@@ -145,7 +149,7 @@ def getSaldoSpecific(user,isExpense):
                 dailiesValue +=Decimal(di.value) * Decimal(diference)
 
         #getting biweeklies
-        dailyBiweek = dailes.filter(concept__period=2)
+        dailyBiweek = dailes.filter(concept__period=2) # get daly inputs that has as period biweekly
         multiplier = 0.00
         for db in dailyBiweek:
             if db.date_from.year < now.year:
@@ -162,7 +166,7 @@ def getSaldoSpecific(user,isExpense):
             dailiesValue +=Decimal(di.value) * Decimal(multiplier)
 
 
-        dailyMonth = dailes.filter(concept__period=3)
+        dailyMonth = dailes.filter(concept__period=3) #get daily inputs that have as period monthly
         multiplier = 0.00
         for db in dailyMonth:
             if db.date_from.year < now.year:
@@ -179,11 +183,12 @@ def getSaldoSpecific(user,isExpense):
         return dailiesValue
 
 def getSaldo(user):
-    income  = getSaldoSpecific(user, False)
+    incomes  = getSaldoSpecific(user, False)
     expenses= getSaldoSpecific(user, True)
-    return income - expenses
+    return incomes - expenses
 
 def canExpense(user, value):
+    #function to see if a user has money to expend
     saldo = getSaldo(user)
     if saldo  >= value:
         return True
@@ -198,10 +203,9 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
 
     #getting values for this daily input types with no period
     if not useMonth:
-        dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__gte= dt(year=dt.now().year, day=1, month=dt.now().month)).aggregate(suma=Sum('value'))['suma'] or 0.00)
+        dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__gte= dt(year=dt.now().year, day=1, month=1)).aggregate(suma=Sum('value'))['suma'] or 0.00)
     else:
-        dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__gte= dt(year=dt.now().year, month=1, day=1)).aggregate(suma=Sum('value'))['suma'] or 0.00)
-
+        dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__lte= dt(year=dt.now().year, day=1, month=dt.now().month)).aggregate(suma=Sum('value'))['suma'] or 0.00)
 
     #getting daily dailyInputs for this type
     dailiesValue = Decimal(dailiesValue)
@@ -209,7 +213,7 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
         dailiesValue +=Decimal(( dailes.filter(concept__period=1).aggregate(suma=Sum('value'))['suma'] or 0.00) * dt.now().day)
     else:
         day_of_year = (dt.now() - dt(dt.now().year, 1, 1)).days + 1
-        dailiesValue +=Decimal( dailes.filter(concept__period=1,  date_from__lt=dt(year=dt.now().year, month=1,day=1)).aggregate(suma=Sum('value'))['suma'] or Decimal(0)) * Decimal(day_of_year)
+        dailiesValue +=Decimal( dailes.filter(concept__period=1,  date_from__lte=dt(year=dt.now().year, month=dt.now().month,day=dt.now().day)).aggregate(suma=Sum('value'))['suma'] or Decimal(0)) * Decimal(day_of_year)
         temp = dailes.filter(concept__period=1, date_from__gte= dt(year=dt.now().year, month=1, day=1))
         for d in temp:
             day_of_year_daily = ( (dt(year= d.date_from.year, month=d.date_from.month, day=d.date_from.day) - dt(d.date_from.year, 1, 1)).days )
@@ -233,13 +237,13 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
     if useMonth:
         dailiesValue += Decimal((dailes.filter(concept__period=2).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
     else:
-        dailiesValue += Decimal((dailes.filter(concept__period=2, date_from__lt=dt(year=dt.now().year, month=1,day=1)).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
+        dailiesValue += Decimal((dailes.filter(concept__period=2, date_from__lte=dt(year=dt.now().year, month=dt.now().month,day=dt.now().day)).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
         temp = dailes.filter(concept__period=2, date_from__gte=dt(year=dt.now().year, month=1,day=1))
         for d in temp:
             tempMultiplier = (d.date_from.month-1) *2
-            if d.date_from.day >=14:
+            if d.date_from.day >14:
                 tempMultiplier-=1
-            dailiesValue+= Decimal(d.value * (multiplier + tempMultiplier))
+            dailiesValue+= Decimal(d.value * multiplier)
     #getting monthlies
     if useMonth:
         multiplier = 1
@@ -252,7 +256,7 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
     if useMonth or True:
         dailiesValue += Decimal((dailes.filter(concept__period=3).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
     else:
-        dailiesValue += Decimal((dailes.filter(concept__period=3, date_from__lt=dt(year=dt.now().year, month=1,day=1)).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
+        dailiesValue += Decimal((dailes.filter(concept__period=3, date_from__lte=dt(year=dt.now().year, month=dt.now().month,day=dt.now().day)).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
         temp = dailes.filter(concept__period=3, date_from__gte=dt(year=dt.now().year, month=1,day=1))
         for d in temp:
             tempMultiplier = multiplier - (d.date_from.month-1)
@@ -263,16 +267,16 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
 
 
 def getSummaryYear(user):
+    #function for summary box displayed in landing page
     incomes = getIncomeOrExpense(False, user)
     expenses = getIncomeOrExpense(True, user)
     return incomes - expenses
 
 
 def getSummaryMonth(user):
+    #function for summary box displayed in landing page
     incomes = getIncomeOrExpense(False, user, True)
-    print(incomes,"ponisf")
     expenses = getIncomeOrExpense(True, user, True)
-    print(expenses,"asdf")
     return incomes - expenses
 
 
@@ -289,9 +293,8 @@ def home(request):
         if summaryMonth <0:
             summaryMonth = 0;
         todayDate = dt.today().strftime('%d/%m/%Y')
-        currentSaving = getCurrentSaving(user)
-        print(currentSaving)
         updatePast(user)
+        currentSaving = getCurrentSaving(user)
         context = {'number':number,'currentSaving':currentSaving,
                     'todayDate': todayDate, 'summaryYear':summaryYear,
                     'summaryMonth':summaryMonth }
@@ -415,9 +418,57 @@ def AddDailyInput(request):
                 'dailies':dailies}
     return HttpResponse(template.render(context, request))
 
+def simulateBalance(request):
+    #use case: Simulate Balance
+    number = 4 # variable sent to interface, used to highlight home tab in navbar
+    user = User.objects.get(id=request.user.id)
+    summaryYear = 0.00
+    summaryMonth = 0.00
+
+    form = simulateBalanceForm()
+
+    isMessage = False # tells if there is message to display to the user
+    message = ""
+
+    if request.method == 'POST':
+        form = simulateBalanceForm(request.POST)
+        isMessage = True
+        if form.is_valid():
+            value=form.cleaned_data['value']
+            from_date = form.cleaned_data['from_date']
+            period = form.cleaned_data['period']
+            type = form.cleaned_data['isExpense']
+            concept = Concept(name = "temporal", value = value, period = period, type=type, user= user)
+                #create new concept
+            concept.save()
+            savings_value = 0.00
+            if not type:
+                percentage = Savings_Percentage.objects.get(user=user).percentage
+                savings_value = value * percentage
+            dailyInput = DailyInput(user=user, concept=concept, value=value, date_from =from_date , savings_value=savings_value)
+                #create daily Input
+            dailyInput.save()
+            summaryYear = getSummaryYear(user) #calculate new summary
+            summaryMonth = getSummaryMonth(user) #calculate new summary
+            dailyInput.delete() # rollback
+            concept.delete() # rollback
+            message = "Check your new summary"
+        else:
+            summaryYear = getSummaryYear(user)
+            summaryMonth = getSummaryMonth(user)
+            message = "form not valid"
+    else:
+        summaryYear = getSummaryYear(user)
+        summaryMonth = getSummaryMonth(user)
+
+    context ={ 'number':number, 'summaryYear':summaryYear,
+                        'summaryMonth' : summaryMonth, 'form':form,
+                        'isMessage':isMessage, 'message':message}
+    template = loader.get_template('simulator.html')
+    return HttpResponse(template.render(context, request))
 
 def visualize(request):
-
+    #function for use case visualize Expenses && visualize incomes
     type = request.GET['type']
     from_date = dt.strptime(str(request.GET['from']), "%d/%m/%Y")
     to_date = dt.strptime(str(request.GET['to']), "%d/%m/%Y")
@@ -467,84 +518,50 @@ def visualize(request):
     #return json response
     return HttpResponse(json.dumps(json_data), content_type='application/json')
 
-def simulateBalance(request):
-    number = 4 # variable sent to interface, used to highlight home tab in navbar
-    context ={ 'number':number}
-    template = loader.get_template('simulator.html')
-    return HttpResponse(template.render(context, request))
 
-def visualizeIncomes(request):
-    from_date = dt.strptime(str(request.GET['from']), "%d/%m/%Y")
-    to_date = dt.strptime(str(request.GET['to']), "%d/%m/%Y")
-    dailyUnique = ""
-    dailyDaily = ""
-    dailyBiweekly = ""
-    dailyMonthly = ""
-    current_user = User.objects.get(id=request.user.id)
-    # we should load Incomes
-    dailyUnique= DailyInput.objects.filter(user=current_user, concept__period=0, concept__type = False, date_from__gte = from_date, date_from__lte = to_date).order_by('-date_from')
-    dailyDaily= DailyInput.objects.filter(user=current_user, concept__period=1, concept__type = False, date_from__lte = to_date).order_by('-date_from')
+def getMinDateSaving(months):
+    # function to calculate since which month should we load savings
+    actualMonth = dt.now().month
+    actualYear = dt.now().year
+    if(months < actualMonth):
+        actualMonth-=months
+        return actualMonth, actualYear
+    else:
+        while months > actualMonth:
+            months-=actualMonth
+            actualMonth=12
+            actualYear-=1
+        return actualMonth, actualYear
 
-    if (from_date.day <=14 and to_date.day>=14 and to_date.month == from_date.month )or to_date.month > from_date.month:
-        # check if there is some 14th of some month in this range
-        dailyBiweekly= DailyInput.objects.filter(user=current_user, concept__period=2, concept__type = False, date_from__lte = to_date).order_by('-date_from')
-    if(to_date.month>from_date.month):
-        #check if there is some end of month in this range
-        dailyMonthly= DailyInput.objects.filter(user=current_user, concept__period=3, concept__type = False, date_from__lte = to_date).order_by('-date_from')
-    #begin serialization of each queryset
-    json_dataUnique= serializers.serialize('json', dailyUnique, cls= DjangoJSONEncoder, use_natural_foreign_keys=True,fields=('date_from', 'value', 'concept'))
-    json_dataDaily = serializers.serialize('json', dailyDaily, cls= DjangoJSONEncoder,use_natural_foreign_keys=True,fields=('date_from', 'value', 'concept'))
-    json_dataBiweekly = serializers.serialize('json', dailyBiweekly, cls= DjangoJSONEncoder,use_natural_foreign_keys=True, fields=('date_from', 'value', 'concept'))
-    json_dataMonthly = serializers.serialize('json', dailyMonthly, cls= DjangoJSONEncoder,use_natural_foreign_keys=True,fields=('date_from', 'value', 'concept'))
-    #end serialization of each queryset
+def getLastMonthlySavings(months, user):
+    # get the last savings for the pasten months
+    months-=1
+    minMonth, minYear = getMinDateSaving(months)
+    savings = Savings.objects.filter(user=user)
+    if minYear == dt.now().year:
+        savings = savings.filter(year = dt.now().year, month__gte= dt.now().month - months, month__lte = dt.now().month)
+    else:
+        savingsPart1 = Savings.objects.filter(year = dt.now().year, month__lte = dt.now().month)
+        savingsPart2 = Savings.objects.filter(year = minYear, month__gte = minMonth)
+        savingsPart3 = Savings.objects.filter(year__gt=minYear, year__lt=dt.now().year)
+        savings = savingsPart1 | savingsPart2 |  savingsPart3
+        savings = savings.order_by('year').order_by('month')
 
-    #put all together in a whole json
-    json_data = {'unique':json_dataUnique,
-                'daily': json_dataDaily,
-                'biweek':json_dataBiweekly,
-                'monthly':json_dataMonthly}
+    return savings
 
-    #return json response
-    return HttpResponse(json.dumps(json_data), content_type='application/json')
-
-
-def visualizeExpenses(request):
-    from_date = dt.strptime(str(request.GET['from']), "%d/%m/%Y")
-    to_date = dt.strptime(str(request.GET['to']), "%d/%m/%Y")
-    dailyUnique = ""
-    dailyDaily = ""
-    dailyBiweekly = ""
-    dailyMonthly = ""
-    current_user = User.objects.get(id=request.user.id)
-    dailyUnique= DailyInput.objects.filter(user=current_user, concept__period=0, concept__type =True, date_from__gte = from_date, date_from__lte = to_date).order_by('-date_from')
-    dailyDaily= DailyInput.objects.filter(user=current_user, concept__period=1, concept__type =True, date_from__gte = to_date).order_by('-date_from')
-    if (from_date.day <=14 and to_date.day>=14 and to_date.month == from_date.month ) or to_date.month > from_date.month:
-        # check if there is some 14th of some month in this range
-        dailyBiweekly= DailyInput.objects.filter(user=current_user, concept__period=2, concept__type =True, date_from__lte = to_date).order_by('-date_from')
-    if(to_date.month>from_date.month):
-        #check if there is some end of month in this range
-        dailyMonthly= DailyInput.objects.filter(user=current_user, concept__period=3, concept__type =True, date_from__lte = to_date).order_by('-date_from')
-
-    #begin serialization of each queryset
-    json_dataUnique= serializers.serialize('json', dailyUnique, cls= DjangoJSONEncoder, use_natural_foreign_keys=True,fields=('date_from', 'value', 'concept'))
-    json_dataDaily = serializers.serialize('json', dailyDaily, cls= DjangoJSONEncoder,use_natural_foreign_keys=True,fields=('date_from', 'value', 'concept'))
-    json_dataBiweekly = serializers.serialize('json', dailyBiweekly, cls= DjangoJSONEncoder,use_natural_foreign_keys=True, fields=('date_from', 'value', 'concept'))
-    json_dataMonthly = serializers.serialize('json', dailyMonthly, cls= DjangoJSONEncoder,use_natural_foreign_keys=True,fields=('date_from', 'value', 'concept'))
-    #end serialization of each queryset
-
-    #put all together in a whole json
-    json_data = {'unique':json_dataUnique,
-                'daily': json_dataDaily,
-                'biweek':json_dataBiweekly,
-                'monthly':json_dataMonthly}
-
-    #return json response
-    return HttpResponse(json.dumps(json_data), content_type='application/json')
-
+def getUpdateUserInputSaving(request):
+    #use case: visualize savings history
+    #function to be called when input in template savings.html changes
+    months = int(request.GET['months'])
+    savings = getLastMonthlySavings(months, request.user)
+    data = serializers.serialize('json', savings)
+    return HttpResponse(json.dumps(data), content_type='application/json')
 
 
 def visualizeSavings(request):
-    number = 5 # variable sent to interface, used to highlight home tab in navbar
-    context = {'number':number}
+    #use case: visualize savings history
+    number = 5 # variable sent to interface, used to highlight home tab in navbar5
+    savings = getLastMonthlySavings(5, request.user)
+    context = {'number':number, 'savings': savings}
     template = loader.get_template('savings.html')
     return HttpResponse(template.render(context, request))

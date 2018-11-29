@@ -111,10 +111,9 @@
 
 $( document ).ready(function() {
 
-	$('[data-toggle="tooltip"]').tooltip();
+	$('[data-toggle="tooltip"]').tooltip()	;
 
-
-	$('#detail-div').hide();
+		$('#detail-div').hide(); //detail-div is displayed when user wants to see incomes or expenses in home.html
 
 		// variable "number" sent from backend to highlight navbar tabs
     if({{number}} == 1){
@@ -270,6 +269,7 @@ function deleteConcept(e){
 	}
 
 	function goback() {
+		//function to be called when user click back button in home.html
 		$('#main-page').show()
 		$('#detail-div').hide();
 		clearVisualizeDiv("list-no-period");
@@ -315,7 +315,7 @@ function deleteConcept(e){
 
 
 	function loadData(type, data) {
-
+		// load data when user wants to see incomes or expenses detail in home.htmls
 		var listDivName;
 
 		if (type == 1) {
@@ -337,11 +337,9 @@ function deleteConcept(e){
 		var indexOpeningParenthesis = data.indexOf("{");
 		var indexClosParenthesis = data.indexOf("}");
 		for (var i = 0; i < data.length; i++) {
+			//parsing json that is returned as txt 
 			if (indexOpeningParenthesis < 0 || indexClosParenthesis < 0) return;
-			console.log("opening: " + indexOpeningParenthesis)
-			console.log("closing: " + indexClosParenthesis)
 			var temp = data.substring(indexOpeningParenthesis, indexClosParenthesis + 2);
-			console.log(temp);
 			fields = JSON.parse(temp);
 			fields = fields['fields'];
 			if (fields == undefined) continue;
