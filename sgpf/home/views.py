@@ -189,13 +189,15 @@ def getSaldo(user):
 
 def canExpense(user, value, isUseSavings):
     #function to see if a user has money to expend
+
     if not isUseSavings:
         saldo = getSaldo(user)
         if saldo  >= value:
             return True
         return False
+
     actualSavings = Savings.objects.get(user=user, month= dt.now().month, year=dt.now().year)
-    if actualSavings.value <=value:
+    if actualSavings.value >=value:
         actualSavings.value-=value
         actualSavings.save()
         return True
@@ -212,7 +214,7 @@ def getIncomeOrExpense(isExp, user, useMonth = False):
     if not useMonth:
         dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__gte= dt(year=dt.now().year, day=1, month=1)).aggregate(suma=Sum('value'))['suma'] or 0.00)
     else:
-        dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__lte= dt(year=dt.now().year, day=1, month=dt.now().month)).aggregate(suma=Sum('value'))['suma'] or 0.00)
+        dailiesValue += Decimal(dailes.filter(concept__period=0, date_from__gte= dt(year=dt.now().year, day=1, month=dt.now().month)).aggregate(suma=Sum('value'))['suma'] or 0.00)
 
     #getting daily dailyInputs for this type
     dailiesValue = Decimal(dailiesValue)
@@ -384,6 +386,10 @@ def AddDailyInput(request):
             from_date = form.cleaned_data['from_date']
             percentage = Savings_Percentage.objects.get(user=current_user).percentage
             isUseSavings = form.cleaned_data['isUseSavings']
+            if(isUseSavings == 'False'):
+                isUseSavings = False
+            else:
+                isUseSavings = True
             savings_value = percentage*value
             if(concept.type == True):
                 savings_value = 0
@@ -413,6 +419,7 @@ def AddDailyInput(request):
                 else:
                     message = "don't have enough funds"
             else:
+                print(form.errors)
                 dailyInput.save()
         else:
             #form is not valid, dont have all data to create new daily input
