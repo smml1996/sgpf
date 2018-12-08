@@ -54,6 +54,20 @@
         </div>
         <!-- end: input concept's value -->
 
+        <!-- begin: input use savings -->
+        <div class="col-md-10" style="margin-left:auto; margin-right:auto;">
+          <div class="input-group mb-3 ">
+          <label >Use Savings: </label>
+            <select class="custom-select" name ="{{ form.isUseSavings.html_name }}" style="margin-left:3em;">
+              {% for val, displayVal in form.fields.isUseSavings.choices %}
+                <option value= "{{ val }}">{{ displayVal }}</option>
+              {% endfor %}
+            </select>
+
+          </div>
+        </div>
+        <!-- end: input use savings-->
+
 
 
         <div class="container" style="margin-top:10vh;">
@@ -86,7 +100,6 @@
                   <th> value </th>
                   <th> value for saving </th>
                   <th> type </th>
-
               </tr>
           </thead>
           <tbody>

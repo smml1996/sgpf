@@ -43,3 +43,7 @@ class DailyInputForm(forms.Form):
     id_concepto = forms.IntegerField()
     value = forms.DecimalField(decimal_places=2)
     from_date = forms.DateField(input_formats=['%d/%m/%Y'])
+    isUseSavings = forms.ChoiceField( choices=(
+        (False, 'No'),
+        (True, 'Yes'),
+    ))

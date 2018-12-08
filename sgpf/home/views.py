@@ -187,10 +187,17 @@ def getSaldo(user):
     expenses= getSaldoSpecific(user, True)
     return incomes - expenses
 
-def canExpense(user, value):
+def canExpense(user, value, isUseSavings):
     #function to see if a user has money to expend
-    saldo = getSaldo(user)
-    if saldo  >= value:
+    if not isUseSavings:
+        saldo = getSaldo(user)
+        if saldo  >= value:
+            return True
+        return False
+    actualSavings = Savings.objects.get(user=user, month= dt.now().month, year=dt.now().year)
+    if actualSavings.value <=value:
+        actualSavings.value-=value
+        actualSavings.save()
         return True
     return False
 
@@ -376,6 +383,7 @@ def AddDailyInput(request):
             concept = Concept.objects.get(id=id_concept)
             from_date = form.cleaned_data['from_date']
             percentage = Savings_Percentage.objects.get(user=current_user).percentage
+            isUseSavings = form.cleaned_data['isUseSavings']
             savings_value = percentage*value
             if(concept.type == True):
                 savings_value = 0
@@ -400,8 +408,7 @@ def AddDailyInput(request):
 
                 dailyInput.save()
             elif concept.type == True and concept.period == 0:
-
-                if canExpense(current_user, dailyInput.value):
+                if canExpense(current_user, dailyInput.value, isUseSavings):
                     dailyInput.save()
                 else:
                     message = "don't have enough funds"
