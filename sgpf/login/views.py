@@ -6,12 +6,12 @@ from django.contrib.auth.models import User
 from .models import Savings_Percentage, Savings
 
 
-from login.forms import SignUpForm
+from login.forms import Sign_Up_Form
 from datetime import datetime
 
 
 # Create your views here.
-def isEmailValid(email):
+def is_email_valid(email):
     #funcion para saber si un email esta en uso
         # si esta en uso retornar falso
     users = User.objects.all()
@@ -22,20 +22,20 @@ def signup(request):
     #use case: Sign Up
     message = "" # help messages for user
     if request.method == 'POST':
-        form = SignUpForm(request.POST) # get form filled by user
+        form = Sign_Up_Form(request.POST) # get form filled by user
         if form.is_valid(): # django validations
             username = form.cleaned_data.get('username')
             raw_password = form.cleaned_data.get('password1')
             email = form.cleaned_data.get('email')
-            if isEmailValid(email): #verify this email is not already in use
+            if is_email_valid(email): #verify this email is not already in use
                 form.save() # save new user
-                newUser = User.objects.filter(username = username, email = email)[0]
+                new_user = User.objects.filter(username = username, email = email)[0]
 
-                sp = Savings_Percentage(user = newUser)
+                sp = Savings_Percentage(user = new_user)
                 sp.save() #create new register for this new user regarding her/his desired saving amount
 
-                #saving = Savings(user = newUser, month=datetime.now().month, year=datetime.now().year)
-                #saving.save() # create new register for new user in which we will know how much is she/he saving
+                saving = Savings(user = new_user, month=datetime.now().month, year=datetime.now().year)
+                saving.save() # create new register for new user in which we will know how much is she/he saving
 
                 return redirect('../login/')
             else:
@@ -43,5 +43,5 @@ def signup(request):
         else:
             print("form not valid")
             message = form.errors # gather error messages to show to user
-    form = SignUpForm()
+    form = Sign_Up_Form()
     return render(request, 'registration/signup.html',{'form': form, 'message': message})

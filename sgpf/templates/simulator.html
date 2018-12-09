@@ -36,9 +36,9 @@
 
   <!-- begin: input type -->
   <div class="row" style="margin-top:3vh;">
-    <select class="custom-select" name="{{ form.isExpense.html_name }}" id="type">
-      {% for val, displayVal in form.fields.isExpense.choices %}
-        <option value= "{{ val }}">{{ displayVal }}</option>
+    <select class="custom-select" name="{{ form.is_expense.html_name }}" id="type">
+      {% for val, display_val in form.fields.is_expense.choices %}
+        <option value= "{{ val }}">{{ display_val }}</option>
       {% endfor %}
     </select>
   </div>
@@ -62,8 +62,8 @@
   <!-- begin: select period-->
   <div class="row" style="margin-top:3vh;">
     <select class="custom-select" name ="{{ form.period.html_name }}" id="period">
-      {% for val, displayVal in form.fields.period.choices %}
-        <option value= "{{ val }}">{{ displayVal }}</option>
+      {% for val, display_val in form.fields.period.choices %}
+        <option value= "{{ val }}">{{ display_val }}</option>
       {% endfor %}
     </select>
   </div>
@@ -82,8 +82,8 @@
       <div class="card-body">
         <h5 class="card-title">Summary</h5>
 
-        <p class="card-text text-center">All year: <span id="all-year"> {{ summaryYear }}</span></p>
-          <p class="card-text text-center">Month: <span id="all-month">{{ summaryMonth}}</span></p>
+        <p class="card-text text-center">All year: <span id="all-year"> {{ summary_year }}</span></p>
+          <p class="card-text text-center">Month: <span id="all-month">{{ summary_month}}</span></p>
       </div>
     </div>
   </div>

@@ -5,7 +5,7 @@
 <div class="container" style="margin-top:30vh;">
 
   <div class="row justify-content-center">
-    <h2 > Current Percentage: {{ currentPercentage }}%</h2>
+    <h2 > Current Percentage: {{ current_percentage }}%</h2>
   </div>
 
     <!-- begin: input savings percentage -->
@@ -19,7 +19,7 @@
           <div class="input-group-prepend">
             <span class="input-group-text" id="basic-addon1">%</span>
           </div>
-          <input type="number" min="0"  max="100" step="0.01" class="form-control" id="input_percentage" name="{{ form.value.html_name }}" maxlength="30" placeholder="{{ currentPercentage }}" aria-label="value" aria-describedby="basic-addon1" required>
+          <input type="number" min="0"  max="100" step="0.01" class="form-control" id="input_percentage" name="{{ form.value.html_name }}" maxlength="30" placeholder="{{ current_percentage }}" aria-label="value" aria-describedby="basic-addon1" required>
         </div>
       </div>
 

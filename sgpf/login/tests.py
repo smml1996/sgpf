@@ -6,7 +6,7 @@ from .models import Savings_Percentage
 from decimal import Decimal
 
 #BEGIN TESTS UNIDAD
-class unitTestEmailFunc(TestCase):
+class Unit_Test_Email_Func(TestCase):
     # testing isEmailValid()
     def setUp(self):
         self.credentials = {

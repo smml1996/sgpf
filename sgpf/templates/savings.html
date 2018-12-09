@@ -7,8 +7,8 @@
   <!-- begin: input number months to be shown -->
   <div class="row justify-content-center">
     <div class="form-group">
-      <label for="formControlRange">For the last <span id="rangeValue"> </span> <span id="time-period">months: </label>
-      <input id="formControlRange" type="range" name="rangeInput" value="5" min="5" max="100" onchange="getSavings(this.value);">
+      <label for="form_control_range">For the last <span id="rangeValue"> </span> <span id="time-period">months: </label>
+      <input id="form_control_range" type="range" name="rangeInput" value="5" min="5" max="100" onchange="get_savings(this.value);">
     </div>
   </div>
   <!-- end: input number months to be shown -->
@@ -23,7 +23,7 @@
 
 <script>
 
-function buildData(){
+function build_data(){
   // default report to be shown to user in get method
   var answer = [];
   var month, year;
@@ -53,32 +53,32 @@ $(document).ready(function(){
   		type: "column",
   		showInLegend: false,
   		legendMarkerColor: "grey",
-  		dataPoints: buildData()
+  		dataPoints: build_data()
   	}]
   });
   chart.render(); // build chart
 
 });
-function getSavings(months) {
+function get_savings(months) {
     // called when range input changes
     document.getElementById('rangeValue').innerHTML=val;
     $.ajax({
       type: "GET",
-      url: "{% url 'updateSavings' %}",
+      url: "{% url 'update_savings' %}",
       dataType: "json",
       async: true, // keep front end responsive to user input
       data: {
-        months: $("#formControlRange").val(),
+        months: $("#form_control_range").val(),
 
       },
       success: function(data) {
         var i = data.indexOf('"fields"', 0);
         var j = data.indexOf('}', i);
-        var tempJson, myjson;
+        var temp_json, myjson;
         var chartData = [];
         for(; i !=-1;){
-            tempJson = data.substring(i + ('"fields: "').length, j+1)
-            myjson = JSON.parse(tempJson);
+            temp_json = data.substring(i + ('"fields: "').length, j+1)
+            myjson = JSON.parse(temp_json);
             month = myjson['month'];
             year = myjson[ 'year'];
             chartData.push({y: parseFloat(myjson['value']), label: ("01/"+ month+ "/"+ year)});

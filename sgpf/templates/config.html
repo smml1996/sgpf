@@ -12,8 +12,8 @@
           <div class="col-md-8">
             <div class="row justify-content-center">
               <div class="input-group mb-3 col-md-6 ">
-                {{ form.isNewConcept.errors }}
-              <select class="custom-select" name="{{ form.isNewConcept.html_name }}" id="conceptos">
+                {{ form.is_new_concept.errors }}
+              <select class="custom-select" name="{{ form.is_new_concept.html_name }}" id="conceptos">
                 <option value="-1" selected>New Concept</option> <!-- notice new concept's value equals -1 -->
                 {% for c in conceptos %} <!-- displaying the user's concepts, loaded in backend -->
                   <option value="{{ c.id }}">{{ c.name }}</option>
@@ -57,8 +57,8 @@
             <div class="row justify-content-center">
             <div class="input-group mb-3 col-md-6 ">
             <select class="custom-select" name ="{{ form.period.html_name }}" id="period">
-              {% for val, displayVal in form.fields.period.choices %}
-                <option value= "{{ val }}">{{ displayVal }}</option>
+              {% for val, display_val in form.fields.period.choices %}
+                <option value= "{{ val }}">{{ display_val }}</option>
               {% endfor %}
             </select>
             </div>
@@ -70,9 +70,9 @@
           <div class="col-md-8">
             <div class="row justify-content-center">
             <div class="input-group mb-3 col-md-6 ">
-            <select class="custom-select" name="{{ form.isExpense.html_name }}" id="type">
-              {% for val, displayVal in form.fields.isExpense.choices %}
-                <option value= "{{ val }}">{{ displayVal }}</option>
+            <select class="custom-select" name="{{ form.is_expense.html_name }}" id="type">
+              {% for val, display_val in form.fields.is_expense.choices %}
+                <option value= "{{ val }}">{{ display_val }}</option>
               {% endfor %}
 
             </select>
@@ -87,7 +87,7 @@
 
               <!-- begin: button disable concept -->
               <div class="col-sm-6">
-                <button data-toggle="tooltip" data-placement="top" title="if you disable a concept you will not see it again in the concepts dropdown and you will have to add it again in order to add some daily input with it" type="button" onclick="deleteConcept(event)"  class="btn btn-primary " style="margin-top:1em; float:right; margin-right:1.5em; width:5em;">Disable</button>
+                <button data-toggle="tooltip" data-placement="top" title="if you disable a concept you will not see it again in the concepts dropdown and you will have to add it again in order to add some daily input with it" type="button" onclick="delete_concept(event)"  class="btn btn-primary " style="margin-top:1em; float:right; margin-right:1.5em; width:5em;">Disable</button>
               </div>
               <!-- end: button disable concept -->
 

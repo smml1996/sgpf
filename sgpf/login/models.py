@@ -15,6 +15,6 @@ class Savings(models.Model):
         #some integer between 1 and 12
     year = models.IntegerField()
 
-    isFinalValue = models.BooleanField(default=False)
+    is_final_value = models.BooleanField(default=False)
         #false: is not yet final
         #True: month has passed and we can finally calculate

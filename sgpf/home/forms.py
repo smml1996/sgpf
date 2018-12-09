@@ -2,9 +2,9 @@ from django import forms
 
 from .models import Concept
 
-class ConfigurationForm(forms.Form):
+class Configuration_Form(forms.Form):
     # form inputs for conf.html
-    isNewConcept = forms.IntegerField()
+    is_new_concept = forms.IntegerField()
     name = forms.CharField(max_length=25)
     value = forms.DecimalField(decimal_places=2)
     period = forms.ChoiceField(choices=(
@@ -14,15 +14,15 @@ class ConfigurationForm(forms.Form):
         (3, 'Monthly')
     ))
 
-    isExpense = forms.ChoiceField(choices=(
+    is_expense = forms.ChoiceField(choices=(
         (True, 'Expense'),
         (False, 'Income'),
     ))
 
-class ChangePercentageForm(forms.Form):
+class Change_Percentage_Form(forms.Form):
     value = forms.DecimalField(decimal_places=2)
 
-class simulateBalanceForm(forms.Form):
+class Simulate_Balance_Form(forms.Form):
     value = forms.DecimalField(decimal_places=2)
     period = forms.ChoiceField(choices=(
         (0, 'No Period'),
@@ -31,19 +31,19 @@ class simulateBalanceForm(forms.Form):
         (3, 'Monthly')
     ))
 
-    isExpense = forms.ChoiceField(choices=(
+    is_expense = forms.ChoiceField(choices=(
         (True, 'Expense'),
         (False, 'Income'),
     ))
     from_date = forms.DateField(input_formats=['%d/%m/%Y'])
 
 
-class DailyInputForm(forms.Form):
-    # form inputs for dailyInput.html
+class Daily_Input_Form(forms.Form):
+    # form inputs for Daily_Input.html
     id_concepto = forms.IntegerField()
     value = forms.DecimalField(decimal_places=2)
     from_date = forms.DateField(input_formats=['%d/%m/%Y'])
-    isUseSavings = forms.ChoiceField( choices=(
+    is_use_savings = forms.ChoiceField( choices=(
         (False, 'No'),
         (True, 'Yes'),
     ))

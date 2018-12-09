@@ -49,7 +49,7 @@
               <span class="input-group-text" id="basic-addon2"><i class="fas fa-money-bill-alt"></i></span>
             </div>
             <!-- end: input's addorn -->
-            <input type="number" id="inputValue" min="0.00" step="0.01" name = "{{ form.value.html_name }}" class="form-control" placeholder="Value" aria-label="Username" aria-describedby="basic-addon2">
+            <input type="number" id="input_value" min="0.00" step="0.01" name = "{{ form.value.html_name }}" class="form-control" placeholder="Value" aria-label="Username" aria-describedby="basic-addon2">
           </div>
         </div>
         <!-- end: input concept's value -->
@@ -58,9 +58,9 @@
         <div class="col-md-10" style="margin-left:auto; margin-right:auto;">
           <div class="input-group mb-3 ">
           <label >Use Savings: </label>
-            <select class="custom-select" name ="{{ form.isUseSavings.html_name }}" style="margin-left:3em;">
-              {% for val, displayVal in form.fields.isUseSavings.choices %}
-                <option value= "{{ val }}">{{ displayVal }}</option>
+            <select class="custom-select" name ="{{ form.is_use_savings.html_name }}" style="margin-left:3em;">
+              {% for val, display_val in form.fields.is_use_savings.choices %}
+                <option value= "{{ val }}">{{ display_val }}</option>
               {% endfor %}
             </select>
 
@@ -74,7 +74,7 @@
           <div class="row">
             <!-- begin: button delete -->
             <div class="col-sm-5">
-              <button data-toggle="tooltip" data-placement="top" title="you can only delete daily inputs that have not yet been applied" type="button" onclick="deleteDailyInput(event)" class="btn btn-primary" style="margin-top:1em; float:right; width:5em;">Delete</button>
+              <button data-toggle="tooltip" data-placement="top" title="you can only delete daily inputs that have not yet been applied" type="button" onclick="delete_daily_input(event)" class="btn btn-primary" style="margin-top:1em; float:right; width:5em;">Delete</button>
             </div>
             <!-- end: button delete -->
             <!-- begin: button add -->
@@ -127,34 +127,34 @@
 
 <script>
 
-    var conceptsId =[]; // variable to catch concept's id to change dinamically value's input
-    var conceptsValue = []; // variable to know concepts value to change dinamically value's input
+    var concepts_id =[]; // variable to catch concept's id to change dinamically value's input
+    var concepts_value = []; // variable to know concepts value to change dinamically value's input
     $(document).ready(function(){
 
       $('#table_id').DataTable( {"lengthMenu": [[5,10, 25, 50, -1], [5,10, 25, 50, "All"]]});
 
       // set default value to be the selected concept's value
       {% for c in conceptos|slice:":1" %}
-          document.getElementById('inputValue').value = "{{ c.value }}";
+          document.getElementById('input_value').value = "{{ c.value }}";
       {% endfor %}
 
       // loading ids and its respectives mapping's value
       {% for c in conceptos %}
-        conceptsId.push("{{ c.id }}");
-        conceptsValue.push({{ c.value }});
+        concepts_id.push("{{ c.id }}");
+        concepts_value.push({{ c.value }});
       {% endfor %}
 
       $('select').on('change', function() {
         // on select's change, change value's input
-        var numValue = 0;
-        for(var i =0; i < conceptsId.length; i++){
+        var num_value = 0;
+        for(var i =0; i < concepts_id.length; i++){
 
 
-          if(conceptsId[i] == this.value){
-            numValue = conceptsValue[i];
+          if(concepts_id[i] == this.value){
+            num_value = concepts_value[i];
           }
         }
-        document.getElementById('inputValue').value = numValue ;
+        document.getElementById('input_value').value = num_value ;
 
       });
 
@@ -174,14 +174,14 @@
       date_input.datepicker(options);
 
       // setting to today's date, date input
-      document.getElementById('from-date').value = "{{ todayDate }}";
+      document.getElementById('from-date').value = "{{ today_date }}";
 
     })
 
     // show alert if some daily input has been added or modified to notify user the changes made
-    {% if isDailyInput ==  True %}
+    {% if is_daily_input ==  True %}
       $("#alert_succ").show();
-      document.getElementById('alertMessage').innerHTML = "{{ message }}";
+      document.getElementById('alert_message').innerHTML = "{{ message }}";
     {% endif %}
 
 </script>

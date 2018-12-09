@@ -46,7 +46,7 @@
           <a class="nav-link" href="{% url 'home' %}">Balance</a>
         </li>
         <li class="nav-item" id="li-2">
-          <a class="nav-link" href="{% url 'dailyInput' %}">Daily Input</a>
+          <a class="nav-link" href="{% url 'Daily_Input' %}">Daily Input</a>
         </li>
 
 				<li class="nav-item dropdown ">
@@ -55,7 +55,7 @@
 					</a>
 					<div class="dropdown-menu navbar-dark bg-dark" aria-labelledby="navbarDropdown">
 						<a class="nav-link" href="{% url 'conf' %}">Concept</a>
-						<a class="nav-link" href="{% url 'changePercentage' %}">Percentage</a>
+						<a class="nav-link" href="{% url 'change_percentage' %}">Percentage</a>
 					</div>
 				</li>
         <li class="nav-item" id="li-4">
@@ -72,12 +72,12 @@
   </nav>
 {% endif %}
 <div style="display:none" id="alert_succ" class="alert alert-success alert-dismissible">
-	<button type="button" class="close" onclick="closeAlertSucceed()">&times;</button>
-	<strong id="alertMessage"></strong>
+	<button type="button" class="close" onclick="close_alert_succeed()">&times;</button>
+	<strong id="alert_message"></strong>
 </div>
 <div style="display:none" id="alert_wrong" class="alert alert-warning alert-dismissible fade show" role="alert">
-	<button type="button"  class="close" onclick="closeAlertWrong()">&times;</button>
-	<strong id="alertMessageWrong"></strong>
+	<button type="button"  class="close" onclick="close_alert_wrong()">&times;</button>
+	<strong id="alert_message_wrong"></strong>
 </div>
 {% block content %}
 
@@ -134,26 +134,26 @@ $( document ).ready(function() {
 		}
 });
 
-function closeAlertWrong(){
+function close_alert_wrong(){
 	// used when user wants to close alert dialogue
 	$("#alert_wrong").hide();
 }
 
-function closeAlertSucceed(){
+function close_alert_succeed(){
 	// used when user wants to close alert dialogue
 	$("#alert_succ").hide();
 }
-function deleteConcept(e){
+function delete_concept(e){
 		// $("#conceptos").val() gives concept id which must be positive
 		if($("#conceptos").val() == -1){
 			// user has not selected new concept
 			$("#alert_wrong").show();
-			document.getElementById('alertMessageWrong').innerHTML = "Please Select a Concept";
+			document.getElementById('alert_message_wrong').innerHTML = "Please Select a Concept";
 			return;
 		}
 		$.ajax({
 			type: "GET",
-			url:"{% url 'deleteConcept' %}",
+			url:"{% url 'delete_concept' %}",
 			dataType: "json",
 			data:{
 				csrfmiddlewaretoken:'{{ csrf_token }}',
@@ -162,12 +162,12 @@ function deleteConcept(e){
 			success: function(){
 				// say to user that concept has been disabled
 				$("#alert_succ").show();
-				document.getElementById('alertMessage').innerHTML = "Concept Disabled, please refresh page";
+				document.getElementById('alert_message').innerHTML = "Concept Disabled, please refresh page";
 				console.log("succeed");
 			},
 			error: function(){
 				$("#alert_wrong").show();
-				document.getElementById('alertMessageWrong').innerHTML = "Something went wrong, please try again";
+				document.getElementById('alert_message_wrong').innerHTML = "Something went wrong, please try again";
 				console.log("error");
 
 			}
@@ -175,10 +175,10 @@ function deleteConcept(e){
 	}
 
 
-	function deleteDailyInput(e){
+	function delete_daily_input(e){
 		$.ajax({
 			type: "GET",
-			url:"{% url 'deleteDailyInput' %}",
+			url:"{% url 'delete_daily_input' %}",
 			dataType: "json",
 			async:true, // keep front end responsive to user input
 			data:{
@@ -193,17 +193,17 @@ function deleteConcept(e){
 			},
 			error: function(){
 				$("#alert_wrong").show();
-				document.getElementById('alertMessageWrong').innerHTML = "Something went wrong, please try again";
+				document.getElementById('alert_message_wrong').innerHTML = "Something went wrong, please try again";
 				console.log("error");
 
 			}
 		})
 	}
 
-	function changePercentage(e){
+	function change_percentage(e){
 		$.ajax({
 			type: "GET",
-			url:"{% url 'changePercentage' %}",
+			url:"{% url 'change_percentage' %}",
 			dataType: "json",
 			async:false, // keep front end responsive to user input
 			data:{
@@ -211,7 +211,7 @@ function deleteConcept(e){
 			},
 			success: function(){
 				window.location.reload();
-				document.getElementById('alertMessage').innerHTML = "Percentage Changed!";
+				document.getElementById('alert_message').innerHTML = "Percentage Changed!";
 				// say to user that concept has been disabled
 
 
@@ -219,7 +219,7 @@ function deleteConcept(e){
 			},
 			error: function(){
 				$("#alert_wrong").show();
-				document.getElementById('alertMessageWrong').innerHTML = "Something went wrong, please try again";
+				document.getElementById('alert_message_wrong').innerHTML = "Something went wrong, please try again";
 				console.log("error");
 
 			}
@@ -227,7 +227,7 @@ function deleteConcept(e){
 	}
 
 
-	function loadIncomes(event) {
+	function load_incomes(event) {
 		$.ajax({
 			type: "GET",
 			url: "{% url 'visualize' %}",
@@ -250,10 +250,10 @@ function deleteConcept(e){
 				biweek = data['biweek'];
 				monthly = data['monthly'];
 
-				loadData(1, no_period);
-				loadData(2, daily);
-				loadData(3, biweek);
-				loadData(4, monthly);
+				load_data(1, no_period);
+				load_data(2, daily);
+				load_data(3, biweek);
+				load_data(4, monthly);
 			},
 			error: function() {
 
@@ -263,22 +263,22 @@ function deleteConcept(e){
 	}
 
 
-	function clearVisualizeDiv(listDivName) {
-		var listDiv = document.getElementById(listDivName);
-		listDiv.innerHTML = "";
+	function clear_visualize_div(list_div_name) {
+		var list_div = document.getElementById(list_div_name);
+		list_div.innerHTML = "";
 	}
 
 	function goback() {
 		//function to be called when user click back button in home.html
 		$('#main-page').show()
 		$('#detail-div').hide();
-		clearVisualizeDiv("list-no-period");
-		clearVisualizeDiv("list-daily");
-		clearVisualizeDiv("list-biweekly");
-		clearVisualizeDiv("list-monthly");
+		clear_visualize_div("list-no-period");
+		clear_visualize_div("list-daily");
+		clear_visualize_div("list-biweekly");
+		clear_visualize_div("list-monthly");
 	}
 
-	function loadExpenses(event) {
+	function load_expenses(event) {
 		$.ajax({
 			type: "GET",
 			url: "{% url 'visualize' %}",
@@ -300,10 +300,10 @@ function deleteConcept(e){
 				biweek = data['biweek'];
 				monthly = data['monthly'];
 
-				loadData(1, no_period);
-				loadData(2, daily);
-				loadData(3, biweek);
-				loadData(4, monthly);
+				load_data(1, no_period);
+				load_data(2, daily);
+				load_data(3, biweek);
+				load_data(4, monthly);
 			},
 			error: function() {
 				console.log("error");
@@ -314,32 +314,32 @@ function deleteConcept(e){
 
 
 
-	function loadData(type, data) {
+	function load_data(type, data) {
 		// load data when user wants to see incomes or expenses detail in home.htmls
-		var listDivName;
+		var list_div_name;
 
 		if (type == 1) {
 			// no period
-			listDivName = "list-no-period";
+			list_div_name = "list-no-period";
 		} else if (type == 2) {
 			//daily
-			listDivName = "list-daily";
+			list_div_name = "list-daily";
 		} else if (type == 3) {
 			//biweekly
-			listDivName = "list-biweekly";
+			list_div_name = "list-biweekly";
 		} else {
 			// monthly
-			listDivName = "list-monthly";
+			list_div_name = "list-monthly";
 		}
 
-		var listDiv = document.getElementById(listDivName);
+		var list_div = document.getElementById(list_div_name);
 		var fields, value, name, date, l, s, d, h;
-		var indexOpeningParenthesis = data.indexOf("{");
-		var indexClosParenthesis = data.indexOf("}");
+		var index_opening_parenthesis = data.indexOf("{");
+		var index_clos_parenthesis = data.indexOf("}");
 		for (var i = 0; i < data.length; i++) {
-			//parsing json that is returned as txt 
-			if (indexOpeningParenthesis < 0 || indexClosParenthesis < 0) return;
-			var temp = data.substring(indexOpeningParenthesis, indexClosParenthesis + 2);
+			//parsing json that is returned as txt
+			if (index_opening_parenthesis < 0 || index_clos_parenthesis < 0) return;
+			var temp = data.substring(index_opening_parenthesis, index_clos_parenthesis + 2);
 			fields = JSON.parse(temp);
 			fields = fields['fields'];
 			if (fields == undefined) continue;
@@ -370,9 +370,9 @@ function deleteConcept(e){
 			s.appendChild(document.createTextNode(date));
 			l.appendChild(s);
 
-			listDiv.appendChild(l)
-			indexOpeningParenthesis = data.indexOf("{", indexClosParenthesis+1);
-			indexClosParenthesis = data.indexOf("}", indexOpeningParenthesis );
+			list_div.appendChild(l)
+			index_opening_parenthesis = data.indexOf("{", index_clos_parenthesis+1);
+			index_clos_parenthesis = data.indexOf("}", index_opening_parenthesis );
 
 		}
 
