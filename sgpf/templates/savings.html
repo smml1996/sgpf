@@ -61,7 +61,7 @@ $(document).ready(function(){
 });
 function get_savings(months) {
     // called when range input changes
-    document.getElementById('rangeValue').innerHTML=val;
+    document.getElementById('rangeValue').innerHTML=months;
     $.ajax({
       type: "GET",
       url: "{% url 'update_savings' %}",

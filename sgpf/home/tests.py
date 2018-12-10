@@ -2,7 +2,7 @@ from django.test import TestCase
 from .models import Concept, Daily_Input
 from login.models import Savings
 from django.contrib.auth.models import User
-from .views import get_number_of_days, checkIfSavingExist, get_concepts
+from .views import get_number_of_days, check_if_saving_exist, get_concepts
 from .views import get_current_saving, update_past, can_expense
 from datetime import datetime as dt
 # Create your tests here.
@@ -27,7 +27,7 @@ class unitFuncNumDays(TestCase):
         self.assertTrue(get_number_of_days(date)== 29)
 
 class unitSavingExist(TestCase):
-    #test checkIfSavingExist()
+    #test check_if_saving_exist()
     def setUp(self):
         self.credentials = {
             'username': 'smml1996',
@@ -40,13 +40,13 @@ class unitSavingExist(TestCase):
     def test1(self):
         #test must not exist
         self.assertTrue(len(Savings.objects.all()) == 0)
-        checkIfSavingExist(self.user, 2018, 11) # this savings must not exist
+        check_if_saving_exist(self.user, 2018, 11) # this savings must not exist
         self.assertTrue(len(Savings.objects.filter(user=self.user, month=11,year=2018)) == 1)
-        checkIfSavingExist(self.user, 2018, 11) # now it must exist
+        check_if_saving_exist(self.user, 2018, 11) # now it must exist
         self.assertTrue(len(Savings.objects.filter(user=self.user, month=11,year=2018)) == 1) #check that not new register is being created
 
 class unitget_concepts(TestCase):
-    #test checkIfSavingExist()
+    #test check_if_saving_exist()
     def setUp(self):
         self.credentials = {
             'username': 'smml1996',
@@ -75,7 +75,7 @@ class unitget_current_saving(TestCase):
         }
         User.objects.create_user(**self.credentials) # creacion de user en tabla temporal
         self.user = User.objects.get(username='smml1996')
-        checkIfSavingExist(self.user, year=2018, month=11)
+        check_if_saving_exist(self.user, year=2018, month=11)
         s = Savings.objects.get(user=self.user,year=2018,month=11)
         s.value+=10
         s.save()
@@ -119,7 +119,7 @@ class unitupdate_past(TestCase):
     def test1(self):
         update_past(self.user)
         s = Savings.objects.get(user=self.user, month=10,year=2018)
-        self.assertTrue(s.isFinalValue == True)
+        self.assertTrue(s.is_final_value == True)
 
 
 class unitcan_expense(TestCase):
@@ -131,7 +131,7 @@ class unitcan_expense(TestCase):
         }
         User.objects.create_user(**self.credentials) # creacion de user en tabla temporal
         self.user = User.objects.get(username='smml1996')
-        c = Concept(user=self.user, value=100, period=1, type=False)
+        c = Concept(user=self.user, value=100, period=0, type=False)
         c.save()
         d = Daily_Input(user=self.user, concept=c, value=900, savings_value=100, date_from=dt(year=2018, month=11, day=1))
         d.save()
@@ -141,7 +141,7 @@ class unitcan_expense(TestCase):
         self.assertTrue(not can_expense(self.user, 1000))
     def test3(self):
         self.assertTrue(can_expense(self.user, 900))
-    def test3(self):
+    def test4(self):
         self.assertTrue(not can_expense(self.user, 1001))
 
 

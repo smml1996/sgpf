@@ -26,18 +26,18 @@ def get_number_of_days(date):
 
 def check_if_saving_exist(user, year, month):
     #function to see if we need to create a new saving register for this month
-
     saving = Savings.objects.filter(year=year, month=month, user=user)
-
     if len(saving) == 0:
         saving = Savings(year=year, month =month, user=user) # create saving if user don't have it for this month of the year
         previous_saving = Savings.objects.filter(user=user, year__lte=year).order_by('-month') # get last saving
-
         if(len(previous_saving) > 0):
-            saving.value = previous_saving[0].value #initial value is the previos saving if it exists
+            #initial value is the previos saving if it exists
+            saving.value = previous_saving[0].value
         else:
             saving.value = 0 # if no previous saving, then it is 0
         saving.save()
+        return False
+    return True
 
 def delete_daily_input(request):
     #use case: delete daily input
@@ -47,9 +47,9 @@ def delete_daily_input(request):
     daily = Daily_Input.objects.filter(concept=concept, date_from =date).values('concept__period', 'concept__type','savings_value','date_from','id', 'is_using_savings', 'value')
     user = request.user.id
     #end variables
-    if len(daily) > 0:
+    if len(daily) > 0: # if daily exists
         daily = daily[0]
-        Daily_Input.objects.get(id=daily['id']).delete()
+
         if daily['concept__type'] == False: #if is an income
             if daily['concept__period'] == 0: # if it has no period
                 saving = Savings.objects.get(user=user, month= daily.from_date.month, year=daily.from_date.year)
@@ -61,25 +61,27 @@ def delete_daily_input(request):
                 for s in saving:
                     s.value -=  daily['savings_value']
                     s.save()
-        elif daily['is_using_savings'] == True: # if is expense and she/he used savings s
-            saving = Savings.objects.get(user=user, month= daily.from_date.month, year=daily.from_date.year)
-            saving.value-= daily['value']
+        elif daily['is_using_savings'] == True: # if is expense and she/he used savings
+            saving = Savings.objects.filter(user=user, month__gte= daily['date_from'].month, year__gte=daily['date_from'].year)
+            for s in saving:
+                s.value+= daily['value'] #update savings value si its value is without this expense
+                s.save()
+        Daily_Input.objects.get(id=daily['id']).delete()
 
     data ={} # use empty json as response meaning end of processing
     return HttpResponse(json.dumps(data), content_type="application/json")
 
 def change_savings_percentage(request):
     #use case: change savings percentage
-
     user = User.objects.get(id=request.user.id)
-    current_percentage=0
+    current_percentage=0 #variable to be sent to frontend
     sp = Savings_Percentage.objects.get(user=user)
     if request.method == 'POST':
         form  = Change_Percentage_Form(request.POST)
         if form.is_valid():
 
             sp.percentage = Decimal(form.cleaned_data['value'])/100 # get normal form to save percentage as a number between 0 and 1 (inclusive)
-            current_percentage = sp.percentage
+            current_percentage = sp.percentage #change percentage
             sp.save()
     else:
         current_percentage = sp.percentage
@@ -89,21 +91,19 @@ def change_savings_percentage(request):
 
     return HttpResponse(template.render(context, request))
 
-
 def get_concepts(usuario):
     # get only concepts which are not disabled by user
     conceptos = Concept.objects.filter(user=usuario, is_disabled=False)
     return conceptos
 
-
 def get_current_saving(user, month=dt.now().month, year=dt.now().year , d=dt.now().day):
     #used to calculate savings showed in home
+    #only gets the savings that affect the month and year passed as parameters
 
     check_if_saving_exist(user, year, month)
     now = dt(year=year, month=month, day=d)
 
     current_saving = Savings.objects.get(user=user, year=year, month=month).value #this gives the savings that has no period por this year's month
-
     #begin calculate daily savings
     current_saving+= (Daily_Input.objects.filter( user=user,date_from__lte = now,concept__type=False, concept__period=1).aggregate(suma=Sum('savings_value'))['suma'] or 0)*d
     #end calculate daily savings
@@ -113,6 +113,7 @@ def get_current_saving(user, month=dt.now().month, year=dt.now().year , d=dt.now
         current_saving+= Daily_Input.objects.filter( user=user,date_from__lte = now,concept__type=False, concept__period=3).aggregate(suma=Sum('savings_value'))['suma'] or 0
         # if day is last day of month, then sum biweekly incomes too:
         current_saving+=( Daily_Input.objects.filter( user=user,date_from__lte = now,concept__type=False, concept__period=2).aggregate(suma=Sum('savings_value'))['suma'] or 0)*2
+
     #end begin monthly savings
 
     #check if half month is passed:
@@ -120,12 +121,11 @@ def get_current_saving(user, month=dt.now().month, year=dt.now().year , d=dt.now
         current_saving+= Daily_Input.objects.filter( user=user,date_from__lte = now,concept__type=False, concept__period=2).aggregate(suma=Sum('savings_value'))['suma'] or 0
     return current_saving
 
-
-
 def update_past(user):
-
+    #this function is used to calculate previous savings and set is final value
+    #if new daily input is added see 'update_past_savings' function
     now = dt.now()
-    savingsPast = Savings.objects.filter(user=user, month__lt = now.month, year__lte = now.year, is_final_value=False)
+    savingsPast = Savings.objects.filter(user=user, month__lt = now.month, year__lte = now.year)
 
     for saving in savingsPast:
         # for each saving of each month we want to know if that month has passed and we get to know
@@ -135,7 +135,7 @@ def update_past(user):
         saving.save()
 
 def get_saldo_specific(user,is_expense):
-
+    #called by get saldo to calculate only incomes or only Expenses
         now = dt.now()
         dailies_value = Decimal(0.00)
         # getting all income dailies
@@ -145,7 +145,6 @@ def get_saldo_specific(user,is_expense):
         dailies_value += Decimal(dailes.filter(concept__period=0, date_from__lte= now).aggregate(suma=Sum('value'))['suma'] or 0.00)
         #getting daily Daily_Inputs for this type
         dailies_value = Decimal(dailies_value)
-
 
         Daily_Inputs = dailes.filter(concept__period =1) # get daily inputs that have as period daily
         for di in Daily_Inputs:
@@ -172,7 +171,7 @@ def get_saldo_specific(user,is_expense):
                 if(db.date_from.day<=14):
                     num_middles+=1
                 multiplier = num_middles
-            dailies_value +=Decimal(di.value) * Decimal(multiplier)
+            dailies_value +=Decimal(db.value) * Decimal(multiplier)
 
 
         daily_month = dailes.filter(concept__period=3) #get daily inputs that have as period monthly
@@ -187,39 +186,38 @@ def get_saldo_specific(user,is_expense):
             else:
                 num_middles = (12 - db.date_from.month)+1
                 multiplier = num_middles
-            dailies_value +=Decimal(di.value) * Decimal(multiplier)
-            return dailies_value
-
+            dailies_value +=Decimal(db.value) * Decimal(multiplier)
+        return dailies_value
 
 def get_saldo(user):
+    # get incomes and expenses of user
     incomes  = get_saldo_specific(user, False)
     expenses= get_saldo_specific(user, True)
     return incomes - expenses
 
-def can_expense(user, value, is_use_savings):
+def can_expense(user, value, date,is_use_savings=False):
     #function to see if a user has money to expend
-
-    if not is_use_savings:
+    if not is_use_savings: # we calculate saldo if user is not using savings
         saldo = get_saldo(user)
         if saldo  >= value:
             return True
         return False
-
-    actual_savings = Savings.objects.get(user=user, month= dt.now().month, year=dt.now().year)
+    actual_savings = Savings.objects.get(user=user, month= date.month, year=date.year)
     if actual_savings.value >=value:
-        actual_savings.value-=value
-        actual_savings.save()
+        savings = Savings.objects.filter(user=user, month__gte = date.month, year__gte=date.year)
+        for s in savings: #if is possible to expend with actual saving then update related later savings
+            s.value-=value
+            s.save()
         return True
     return False
 
-
-
 def get_income_or_expense(is_exp, user, use_month = False):
+    #used to get summary report for home page
     now = dt.now()
     dailies_value = Decimal(0.00)
     # getting all dailies of specific type (expense or income)
 
-    dailes = Daily_Input.objects.filter(user=user, date_from__lte=dt.now(),concept__type=is_exp)
+    dailes = Daily_Input.objects.filter(user=user, date_from__lte=dt.now(),concept__type=is_exp, is_using_savings=False)
 
 
     #getting values for this daily input types with no period
@@ -233,11 +231,16 @@ def get_income_or_expense(is_exp, user, use_month = False):
     if use_month:
         dailies_value +=Decimal(( dailes.filter(concept__period=1).aggregate(suma=Sum('value'))['suma'] or 0.00) * dt.now().day)
     else:
+        #how many days have passed since year started?
         day_of_year = (dt.now() - dt(dt.now().year, 1, 1)).days + 1
-        dailies_value +=Decimal( dailes.filter(concept__period=1,  date_from__lte=dt(year=dt.now().year, month=dt.now().month,day=dt.now().day)).aggregate(suma=Sum('value'))['suma'] or Decimal(0)) * Decimal(day_of_year)
+        #first we calculate from previous years
+        dailies_value +=Decimal( dailes.filter(concept__period=1,  date_from__lt=dt(year=dt.now().year, month=1,day=1)).aggregate(suma=Sum('value'))['suma'] or Decimal(0)) * Decimal(day_of_year)
+        #then we calculate the ones from this year
         temp = dailes.filter(concept__period=1, date_from__gte= dt(year=dt.now().year, month=1, day=1))
         for d in temp:
+            #day_of_year_daily is used to get the number of day in which the daily input was created
             day_of_year_daily = ( (dt(year= d.date_from.year, month=d.date_from.month, day=d.date_from.day) - dt(d.date_from.year, 1, 1)).days )
+            # the number of days passed is the difference between actual count day of year and day_of_year_daily
             dailies_value+= Decimal(d.value * (day_of_year - day_of_year_daily))
 
     #getting biweeklies
@@ -261,10 +264,11 @@ def get_income_or_expense(is_exp, user, use_month = False):
         dailies_value += Decimal((dailes.filter(concept__period=2, date_from__lte=dt(year=dt.now().year, month=dt.now().month,day=dt.now().day)).aggregate(suma=Sum('value'))['suma'] or 0.00) * multiplier)
         temp = dailes.filter(concept__period=2, date_from__gte=dt(year=dt.now().year, month=1,day=1))
         for d in temp:
-            tempMultiplier = (d.date_from.month-1) *2
+            tempMultiplier = (d.date_from.month-1) *2 # we have 2 * number_of_months biweeks
             if d.date_from.day >14:
-                tempMultiplier-=1
+                tempMultiplier-=1 #if daily input was entered after half month then is one wbeweek less
             dailies_value+= Decimal(d.value * multiplier)
+
     #getting monthlies
     if use_month:
         multiplier = 1
@@ -286,20 +290,17 @@ def get_income_or_expense(is_exp, user, use_month = False):
 
     return dailies_value
 
-
 def get_summary_year(user):
     #function for summary box displayed in landing page
     incomes = get_income_or_expense(False, user)
     expenses = get_income_or_expense(True, user)
     return incomes - expenses
 
-
 def get_summary_month(user):
     #function for summary box displayed in landing page
     incomes = get_income_or_expense(False, user, True)
     expenses = get_income_or_expense(True, user, True)
     return incomes - expenses
-
 
 def home(request):
     number = 1 # variable sent to interface, used to highlight home tab in navbar
@@ -310,12 +311,14 @@ def home(request):
         summary_year = get_summary_year(user)
 
         summary_month = get_summary_month(user)
-
+        print("summary_month" , summary_month)
         if summary_month <0:
+            #summary month can be zero if we have money from previous months
+                #so we do not need to display negative number
             summary_month = 0;
-        today_date = dt.today().strftime('%d/%m/%Y')
-        update_past(user)
-        current_saving = get_current_saving(user)
+        today_date = dt.today().strftime('%d/%m/%Y') #date displayed in frntend input field
+        update_past(user) #in case a last day of month has passed since last login
+        current_saving = get_current_saving(user) # displayed in fronend
         context = {'number':number,'current_saving':current_saving,
                     'today_date': today_date, 'summary_year':summary_year,
                     'summary_month':summary_month }
@@ -324,9 +327,7 @@ def home(request):
         # if user not authenticated send her/him to login page
         return redirect('login/')
 
-
 def save_concept(request):
-
     #use case: Save Concept
     number= 3 # variable sent to interface, used to highlight home tab in navbar
     current_user = User.objects.get(id=request.user.id)
@@ -361,7 +362,6 @@ def save_concept(request):
     context = {'number':number, 'conceptos': conceptos, 'form': form, 'message':message}
     return HttpResponse(template.render(context, request))
 
-
 def disable_concept(request):
     #use case: disable concepts
     # function used for ajax
@@ -374,13 +374,54 @@ def disable_concept(request):
     data = {} #send empty data as json, meaning end of processing
     return HttpResponse(json.dumps(data), content_type="application/json")
 
+def update_past_savings(user, daily_input):
+    #function that updates savings when a new daily input is entered
+    temporal = get_current_saving(user, month=daily_input.date_from.month, year=daily_input.date_from.year, d=get_number_of_days(daily_input.date_from))
+    cumulative = daily_input.value #variable to be added as months pass
+    temp = daily_input.date_from # we are going to loop since this date
+
+    #adding a month to current date:
+    if temp.month == 12:
+        temp = dt(month = 1, year = temp.year +1, day=1)
+        temp = dt(month =1, year = temp.year, day = get_number_of_days(temp))
+    else:
+        temp = dt(month = temp.month +1, year = temp.year, day =1)
+        temp = dt(month = temp.month, year = temp.year, day= get_number_of_days(temp))
+
+    bool_temp = False # saving exist?
+
+    #while condition: loop until is not the current saving
+    while (temp.year < dt.now().year) or (temp.year == dt.now().year and temp.month < dt.now().month):
+        bool_temp = check_if_saving_exist(user, temp.year, temp.month)
+
+        s = Savings.objects.filter(user=user, month =temp.month, year= temp.year)[0]
+        temporal = get_current_saving(user, month = temp.month, year = temp.year, d = temp.day)
+        s.value = temporal # if saving didn't existed then it has already previous saving
+        if bool_temp:
+            s.value+=temporal # if not we have to add this daily input value
+        s.save()
+        if daily_input.period == 3:
+            #if its monthly we add one daily input value
+            cumulative+=daily_input.value
+        elif daily_input.period == 2:
+            #if its biweekly
+            cumulative+= daily_input.value*2
+        elif daily_input.period == 1:
+            #if its daily
+            cumulative+=daily_input.value * get_number_of_days(temp)
+
+        #adding 1 month to current date:
+        if temp.month == 12:
+            temp = dt(month = 1, year = temp.year +1, day=1)
+            temp = dt(month =1, year = temp.year, day = get_number_of_days(temp))
+        else:
+            temp = dt(month = temp.month +1, year = temp.year, day =1)
+            temp = dt(month = temp.month, year = temp.year, day= get_number_of_days(temp))
 
 def add_daily_input(request):
     # use case: Add daily input
     from .models import Daily_Input
     current_user = User.objects.get(id=request.user.id)
-
-
     dailies = Daily_Input.objects.all().filter(user=request.user).order_by('-id').values('value','concept__name', 'concept__type', 'date_from', 'savings_value')
     conceptos = get_concepts(current_user) # variable meant to be sent to interface
     number = 2 # variable sent to interface, used to highlight home tab in navbar
@@ -413,33 +454,34 @@ def add_daily_input(request):
             else:
                 value-=savings_value
             #end variables
-            Daily_Input = Daily_Input(user=current_user, concept=concept, value=value, date_from =from_date , savings_value=savings_value)
+            daily_input = Daily_Input(user=current_user, concept=concept, value=value, date_from =from_date , savings_value=savings_value)
 
-            check_if_saving_exist(current_user, Daily_Input.date_from.year,Daily_Input.date_from.month)
+            check_if_saving_exist(current_user, daily_input.date_from.year,daily_input.date_from.month)
 
 
-            if concept.period == 0 and concept.type == False:
-                # if is a concept that has no period and is an income then sum to savings
+            if concept.type == False:
+                # if is income then sum to savings
                 # for the refering month and year
-
-                daily_month = Daily_Input.date_from.month
-                dailyYear = Daily_Input.date_from.year
-
-                saving = Savings.objects.filter(user= current_user, month=dailyMonth, year=dailyYear)[0]
-                saving.value+=savings_value
-                saving.save()
-
-                Daily_Input.save()
-            elif concept.type == True and concept.period == 0:
-                if can_expense(current_user, Daily_Input.value, is_use_savings):
-                    if is_use_savings:
-                        Daily_Input = Daily_Input(user=current_user, concept=concept, value=value, date_from =from_date , savings_value=savings_value, is_using_savings=True)
-                    Daily_Input.save()
+                daily_input.save()
+                if concept.period == 0: # if it has no period
+                    daily_month = daily_input.date_from.month
+                    daily_year = daily_input.date_from.year
+                    saving = Savings.objects.filter(user= current_user, month=daily_month, year=daily_year)[0]
+                    saving.value+=savings_value
+                    saving.save()
                 else:
+                    #we have to loop through related savings
+                    update_past_savings(current_user, daily_input)
+            elif concept.type == True and concept.period == 0: #if is expense with no period
+                if can_expense(current_user, daily_input.value,daily_input.date_from, is_use_savings):
+                    if is_use_savings: # we only accept expenses with period 0
+                        daily_input = Daily_Input(user=current_user, concept=concept, value=value, date_from =from_date , savings_value=savings_value, is_using_savings=True)
+                    daily_input.save()
+                else:
+                    print("can't expend")
                     message = "don't have enough funds"
             else:
-                print(form.errors)
-                Daily_Input.save()
+                daily_input.save() # we do not check expenses with period
         else:
             #form is not valid, dont have all data to create new daily input
             message = "couldn't save this daily input"
@@ -463,7 +505,6 @@ def simulate_balance(request):
     is_message = False # tells if there is message to display to the user
     message = ""
 
-
     if request.method == 'POST':
         form = Simulate_Balance_Form(request.POST)
         is_message = True
@@ -479,12 +520,12 @@ def simulate_balance(request):
             if not type:
                 percentage = Savings_Percentage.objects.get(user=user).percentage
                 savings_value = value * percentage
-            Daily_Input = Daily_Input(user=user, concept=concept, value=value, date_from =from_date , savings_value=savings_value)
+            daily_input = Daily_Input(user=user, concept=concept, value=value, date_from =from_date , savings_value=savings_value)
                 #create daily Input
-            Daily_Input.save()
+            daily_input.save()
             summary_year = get_summary_year(user) #calculate new summary
             summary_month = get_summary_month(user) #calculate new summary
-            Daily_Input.delete() # rollback
+            daily_input.delete() # rollback
             concept.delete() # rollback
             message = "Check your new summary"
         else:
@@ -579,6 +620,7 @@ def get_last_monthly_savings(months, user):
     if min_year == dt.now().year:
         savings = savings.filter(year = dt.now().year, month__gte= dt.now().month - months, month__lte = dt.now().month)
     else:
+        #if is not from current year we have to process in batches
         savings_part_1 = Savings.objects.filter(year = dt.now().year, month__lte = dt.now().month)
         savings_part_2 = Savings.objects.filter(year = min_year, month__gte = min_month)
         savings_part_3 = Savings.objects.filter(year__gt=min_year, year__lt=dt.now().year)
